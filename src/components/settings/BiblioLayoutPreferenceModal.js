@@ -248,7 +248,7 @@ const BiblioLayoutPreferenceModal = ({ onApplyLayout, maxCount = 10 }) => {
       <Button
         variant="outline-primary"
         size="sm"
-        title="Arrange editor sections"
+        title="Editor layout"
         onClick={() => setShowModal(true)}
       >
         <FaGear size={14} style={{ marginRight: '6px' }} />
@@ -266,7 +266,7 @@ const BiblioLayoutPreferenceModal = ({ onApplyLayout, maxCount = 10 }) => {
         size="lg"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Arrange Editor Sections</Modal.Title>
+          <Modal.Title>Editor Layout</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
@@ -318,7 +318,7 @@ const BiblioLayoutPreferenceModal = ({ onApplyLayout, maxCount = 10 }) => {
 
           {/* Create new layout */}
           <Form.Group className="mb-4">
-            <Form.Label>Save current arrangement as a new layout</Form.Label>
+            <Form.Label>Save as a new layout</Form.Label>
             <div className="d-flex gap-2">
               <Form.Control
                 type="text"

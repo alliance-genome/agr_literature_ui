@@ -3,15 +3,18 @@ import {
   isAdvancedQueryEmpty,
   createEmptyTree,
   createFieldRow,
+  createWftLeaf,
   flattenAdvancedForGrid,
   normalizeToFlatTree,
+  needsFlatNormalization,
   describeCompiledQuery,
   isLeaf,
+  isWftLeaf,
   buildValueLabeler,
   ENTITY_TYPE_OPTIONS,
   VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS,
   FIELD_DEF_BY_KEY,
-  TET_FIELD_DEFS,
+  WFT_CATEGORY_DEFS,
   entityTypeNameForCurie,
 } from '../advancedQueryModel';
 
@@ -192,12 +195,15 @@ describe('entity_type controlled vocabulary (SCRUM-6228)', () => {
 });
 
 describe('entity field (specific-entity lookup, SCRUM-6228)', () => {
-  test('entity is NOT a selectable field in the dropdown (removed per curator request)', () => {
-    expect(FIELD_DEF_BY_KEY.entity).toBeUndefined();
-    expect(TET_FIELD_DEFS.some((d) => d.key === 'entity')).toBe(false);
+  test('entity is a free-text field def (no static options/facet)', () => {
+    const def = FIELD_DEF_BY_KEY.entity;
+    expect(def).toBeTruthy();
+    expect(def.label).toBe('Entity');
+    expect(def.facetKey).toBeNull();
+    expect(def.options).toBeUndefined();
   });
 
-  test('the compiler still folds a persisted entity field into the entity match key', () => {
+  test('an entity curie compiles to the entity match key', () => {
     const leaf = {
       type: 'tet',
       negate: false,
@@ -285,15 +291,23 @@ describe('excludeNoData default (facet "exclude negative" parity, SCRUM-6228)', 
       .toEqual({ topic: ['ATP:1'] });
   });
 
-  test('does not inject into excluded (negated) leaves', () => {
+  test('injects into excluded (negated) leaves too (SCRUM-6400)', () => {
+    // NOT (topic AND has_data = yes): a paper is excluded only when a
+    // data-carrying tag matches; ticking exclude must not drop the clause.
     const out = compileAdvancedQuery(treeWith({ topic: ['ATP:1'] }, true, true));
     expect(out.negate).toBe(true);
-    expect(out.match).toEqual({ topic: ['ATP:1'] });
+    expect(out.match).toEqual({ topic: ['ATP:1'], has_data: ['yes'] });
   });
 
   test('an explicit Has data field overrides the default', () => {
     expect(compileAdvancedQuery(treeWith({ topic: ['ATP:1'], has_data: ['no'] }, true)).match)
       .toEqual({ topic: ['ATP:1'], has_data: ['no'] });
+  });
+
+  test('an explicit Has data field overrides the default on excluded leaves', () => {
+    const out = compileAdvancedQuery(treeWith({ topic: ['ATP:1'], has_data: ['no'] }, true, true));
+    expect(out.negate).toBe(true);
+    expect(out.match).toEqual({ topic: ['ATP:1'], has_data: ['no'] });
   });
 
   test('never makes an empty tree runnable', () => {
@@ -347,6 +361,78 @@ describe('normalizeToFlatTree (legacy/nested -> flat Tag cards, SCRUM-6228)', ()
   test('preserves an explicit excludeNoData = false', () => {
     const off = { operator: 'AND', excludeNoData: false, children: [] };
     expect(normalizeToFlatTree(off).excludeNoData).toBe(false);
+  });
+
+  test('dedupes duplicate field rows within a leaf, merging their values (OR)', () => {
+    // A query saved before the one-row-per-field invariant can carry the same
+    // field twice; the flat builder must collapse them so Add-field/field-disable
+    // logic stays correct.
+    const dup = {
+      operator: 'AND',
+      children: [{
+        type: 'tet', negate: false,
+        fields: [
+          { field: 'topic', values: [{ value: 'ATP:1', label: 'a' }] },
+          { field: 'source_method', values: [{ value: 'sm', label: 'sm' }] },
+          { field: 'topic', values: [{ value: 'ATP:2', label: 'b' }, { value: 'ATP:1', label: 'a' }] },
+        ],
+      }],
+    };
+    const flat = normalizeToFlatTree(dup);
+    const rows = flat.children[0].fields;
+    // topic appears once, in first-occurrence position, with merged, de-duped values.
+    expect(rows.map((r) => r.field)).toEqual(['topic', 'source_method']);
+    expect(rows[0].values.map((v) => v.value)).toEqual(['ATP:1', 'ATP:2']);
+    // The merged leaf still compiles to the OR of both topic values.
+    expect(compileAdvancedQuery(flat).match.topic).toEqual(['ATP:1', 'ATP:2']);
+  });
+});
+
+describe('needsFlatNormalization (restore-path gate, SCRUM-6333)', () => {
+  const leafWith = (fields) => ({ type: 'tet', negate: false, fields });
+
+  test('true for a nested tree', () => {
+    const nested = { operator: 'AND', excludeNoData: false, children: [
+      { operator: 'OR', children: [leafWith([{ field: 'topic', values: [] }])] },
+    ] };
+    expect(needsFlatNormalization(nested)).toBe(true);
+  });
+
+  test('true for a tree that predates the excludeNoData flag', () => {
+    const legacy = { operator: 'AND', children: [leafWith([{ field: 'topic', values: [] }])] };
+    expect(legacy.excludeNoData).toBeUndefined();
+    expect(needsFlatNormalization(legacy)).toBe(true);
+  });
+
+  test('true for a flat, excludeNoData-defined tree carrying a duplicate field row', () => {
+    // The case the dedupe targets: saved by the flat builder after excludeNoData
+    // landed but before the one-row-per-field invariant. Both other gate clauses
+    // are false here, so this duplicate check is what triggers re-normalization.
+    const dup = { operator: 'AND', excludeNoData: false, children: [leafWith([
+      { field: 'topic', values: [{ value: 'ATP:1' }] },
+      { field: 'topic', values: [{ value: 'ATP:2' }] },
+    ])] };
+    expect(needsFlatNormalization(dup)).toBe(true);
+  });
+
+  test('false for a clean flat tree, and idempotent after one normalize pass', () => {
+    const clean = { operator: 'AND', excludeNoData: false, children: [leafWith([
+      { field: 'topic', values: [{ value: 'ATP:1' }] },
+      { field: 'source_method', values: [{ value: 'sm' }] },
+    ])] };
+    expect(needsFlatNormalization(clean)).toBe(false);
+    // Normalizing the duplicate tree from the previous test must yield a tree the
+    // gate leaves alone, so the builder's seeding effect can't loop.
+    const normalized = normalizeToFlatTree({ operator: 'AND', excludeNoData: false, children: [leafWith([
+      { field: 'topic', values: [{ value: 'ATP:1' }] },
+      { field: 'topic', values: [{ value: 'ATP:2' }] },
+    ])] });
+    expect(needsFlatNormalization(normalized)).toBe(false);
+  });
+
+  test('false for null/undefined (seeding handles the empty case separately)', () => {
+    expect(needsFlatNormalization(null)).toBe(false);
+    expect(needsFlatNormalization(undefined)).toBe(false);
   });
 });
 
@@ -464,5 +550,130 @@ describe('flattenAdvancedForGrid (grid integration, SCRUM-6228)', () => {
   test('returns undefined for an empty/null compiled tree', () => {
     expect(flattenAdvancedForGrid(null)).toBeUndefined();
     expect(flattenAdvancedForGrid(compileAdvancedQuery(createEmptyTree()))).toBeUndefined();
+  });
+});
+
+describe('workflow conditions (wft leaves, SCRUM-6398)', () => {
+  const wftLeaf = (values, negate = false) => ({
+    type: 'wft',
+    negate,
+    fields: [{ field: 'workflow_tag_id', values: values.map((v) => ({ value: v, label: v })) }],
+  });
+
+  test('createWftLeaf seeds a single empty workflow_tag_id row', () => {
+    expect(createWftLeaf()).toEqual({
+      type: 'wft',
+      negate: false,
+      fields: [{ field: 'workflow_tag_id', values: [] }],
+    });
+    expect(isLeaf(createWftLeaf())).toBe(true);
+    expect(isWftLeaf(createWftLeaf())).toBe(true);
+    expect(isWftLeaf(createEmptyTree().children[0])).toBe(false);
+  });
+
+  test('wft leaf compiles with its type and OR-ed values', () => {
+    expect(compileAdvancedQuery(wftLeaf(['ATP:0000162', 'ATP:0000163']))).toEqual({
+      type: 'wft',
+      negate: false,
+      match: { workflow_tag_id: ['ATP:0000162', 'ATP:0000163'] },
+    });
+  });
+
+  test('mixed tet + wft tree compiles both leaf types under one operator', () => {
+    const tree = {
+      operator: 'AND',
+      children: [leaf({ topic: 'ATP:0000018' }), wftLeaf(['ATP:0000162'])],
+    };
+    const out = compileAdvancedQuery(tree);
+    expect(out.children.map((c) => c.type)).toEqual(['tet', 'wft']);
+  });
+
+  test('excludeNoData never injects has_data into wft leaves', () => {
+    const tree = {
+      operator: 'AND',
+      excludeNoData: true,
+      children: [leaf({ topic: 'ATP:1' }), wftLeaf(['ATP:0000162'])],
+    };
+    const out = compileAdvancedQuery(tree);
+    expect(out.children[0].match.has_data).toEqual(['yes']);
+    expect(out.children[1].match).toEqual({ workflow_tag_id: ['ATP:0000162'] });
+  });
+
+  test('negated wft leaf keeps its negate flag; empty one collapses', () => {
+    expect(compileAdvancedQuery(wftLeaf(['ATP:0000162'], true)).negate).toBe(true);
+    expect(compileAdvancedQuery(wftLeaf([]))).toBeNull();
+    expect(isAdvancedQueryEmpty({ operator: 'AND', children: [createWftLeaf()] })).toBe(true);
+  });
+
+  test('preview renders workflow_tag with chip labels', () => {
+    const tree = {
+      operator: 'AND',
+      children: [{
+        type: 'wft',
+        negate: false,
+        fields: [{
+          field: 'workflow_tag_id',
+          values: [{ value: 'ATP:0000162', label: 'file converted to text (ATP:0000162)' }],
+        }],
+      }],
+    };
+    const preview = describeCompiledQuery(compileAdvancedQuery(tree), buildValueLabeler(tree));
+    expect(preview).toBe('(workflow_tag = "file converted to text (ATP:0000162)")');
+  });
+
+  test('normalizeToFlatTree preserves wft leaves from a saved tree', () => {
+    const saved = {
+      operator: 'OR',
+      children: [
+        { operator: 'AND', children: [leaf({ topic: 'ATP:1' }), wftLeaf(['ATP:0000162'])] },
+      ],
+    };
+    const flat = normalizeToFlatTree(saved);
+    expect(flat.children.map((c) => c.type)).toEqual(['tet', 'wft']);
+    expect(needsFlatNormalization(flat)).toBe(false);
+  });
+
+  test('wft leaves do not leak into the TET grid filter', () => {
+    const tree = {
+      operator: 'AND',
+      children: [leaf({ topic: 'ATP:1' }), wftLeaf(['ATP:0000162'])],
+    };
+    const flat = flattenAdvancedForGrid(compileAdvancedQuery(tree));
+    expect(flat).toEqual({ topics: ['ATP:1'] });
+  });
+
+  test('WFT_CATEGORY_DEFS mirrors the workflow facet categories', () => {
+    expect(WFT_CATEGORY_DEFS.map((d) => d.key)).toEqual([
+      'abstract_classification', 'author_workflow', 'community_curation',
+      'curation_classification', 'email_extraction', 'entity_extraction',
+      'file_workflow', 'first_pass_curation', 'manual_indexing',
+      'reference_classification',
+    ]);
+    // alphabetical by label, as in the facet panel
+    const labels = WFT_CATEGORY_DEFS.map((d) => d.label);
+    expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
+  });
+});
+
+describe('data_context field', () => {
+  test('is offered with values from the data_context facet', () => {
+    expect(FIELD_DEF_BY_KEY.data_context).toMatchObject({ label: 'Data context', facetKey: 'data_context' });
+  });
+
+  test('compiles to the data_context sub-facet on the same tag as the topic', () => {
+    expect(compileAdvancedQuery(leaf({ topic: 'ATP:0000018', data_context: 'ATP:0000325' })).match).toEqual({
+      topic: ['ATP:0000018'],
+      data_context: ['ATP:0000325'],
+    });
+  });
+
+  test('maps to the grid data_context filters', () => {
+    const tree = { operator: 'AND', children: [
+      leaf({ topic: 'ATP:1', data_context: 'ATP:0000325' }),
+      leaf({ data_context: 'ATP:0000324' }, true),
+    ] };
+    const flat = flattenAdvancedForGrid(compileAdvancedQuery(tree));
+    expect(flat.data_context).toEqual(['ATP:0000325']);
+    expect(flat.negated_data_context).toEqual(['ATP:0000324']);
   });
 });

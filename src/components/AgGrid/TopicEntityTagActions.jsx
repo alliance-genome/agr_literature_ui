@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {useDispatch, useSelector} from "react-redux";
 import { api } from "../../api";
+import LightTip from '../LightTip';
 import Modal from "react-bootstrap/Modal";
 import Button from 'react-bootstrap/Button';
 import { Spinner } from 'react-bootstrap';
@@ -12,6 +13,7 @@ import {
 } from "../../actions/biblioActions";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faEdit, faTrashAlt, faSearch} from "@fortawesome/free-solid-svg-icons";
+import {isCuratorSourceTet} from "../refs_tet_validation/helpers/groupTets";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -34,6 +36,7 @@ export default (props) => {
 
     const ValidatedTagsButton = () => {
         const filteredTags = useSelector(state => state.biblio.filteredTags);
+        const allTags = useSelector(state => state.biblio.topicEntityTags);
         const filterTags = () => {
           if(filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id){
               dispatch(setFilteredTags(null));
@@ -42,15 +45,38 @@ export default (props) => {
               dispatch(setFilteredTags( {validating_tags: props.data.validating_tags, validated_tag: props.data.topic_entity_tag_id}));
           }
         }
+        // A curator-created tag is its own (self) professional-biocurator validation, so
+        // its magnifying glass only means something when a SECOND manual validation
+        // exists — another curator tag validating it. Author tags can still appear in
+        // validating_tags on curator rows even though authors only validate pipelines,
+        // and showing the glass for those edges confused curators (SCRUM-4501).
+        // The rollup moving off "validated_right_self" (displayed as '') proves a second
+        // professional_biocurator-typed validation; the direct lookup below also counts
+        // curator-sourced tags among the validating tags in case the rollup has not
+        // (yet) reflected them. (It originally also covered professional_curator-typed
+        // sources, a spelling the SCRUM-6518 migration normalised away.)
+        const isCuratorCreatedTag = isCuratorSourceTet(props.data);
+        // has_curator_validating_tag is computed server-side over ALL
+        // validating tags (SCRUM-6620); the scan over the redux tag list is
+        // only a fallback for rows serialized by an older backend, and it is
+        // capped at 8,000 rows, so it can miss bulk-loaded validating tags.
+        const hasSecondCuratorValidation = ['validated_right', 'validated_wrong', 'validation_conflict']
+            .includes(props.data.validation_by_professional_biocurator) ||
+            props.data.has_curator_validating_tag === true ||
+            (props.data.has_curator_validating_tag === undefined &&
+                (allTags || []).some(tag => props.data.validating_tags.includes(tag.topic_entity_tag_id) &&
+                    isCuratorSourceTet(tag)));
+        const showButton = props.data.validating_tags.length > 0 &&
+            (!isCuratorCreatedTag || hasSecondCuratorValidation);
         return(
-            props.data.validating_tags.length > 0 ? <Button  size ='sm' variant={ (filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id) ? 'danger' : 'primary'} onClick={() => filterTags()}><FontAwesomeIcon icon={faSearch} /></Button> : null
+            showButton ? <LightTip tip="Show this tag together with the tags that validate it"><Button  size ='sm' aria-label="Show validating tags" variant={ (filteredTags && filteredTags.validated_tag === props.data.topic_entity_tag_id) ? 'danger' : 'primary'} onClick={() => filterTags()}><FontAwesomeIcon icon={faSearch} /></Button></LightTip> : null
         )
     }
 
 
 
     const handleDeleteClick = async () => {
-        let mod = props.data.topic_entity_tag_source.secondary_data_provider_abbreviation;
+        let mod = props.data.tag_source.secondary_data_provider_abbreviation;
         if (mod !== accessLevel) {
             console.error("Permission denied. Cannot delete this row.");
             return;
@@ -76,10 +102,13 @@ export default (props) => {
 
             // status_code=status.HTTP_204_NO_CONTENT
             if (response.status === 204) {
-                // remove the deleted item from the state so that the UI updates
-                props.api.applyTransaction({ remove: [ props.api.getRowNode(props.node.id).data ] });
-                // Force a complete table refresh by toggling the update counter
-                // We increment then immediately decrement to trigger the useEffect
+                // No applyTransaction here: the TET table runs the infinite
+                // row model (SCRUM-6618), which has no client-side transactions
+                // — and getRowNode(...).data threw before the counter toggle,
+                // so the table never refreshed. The toggle below is the whole
+                // mechanism now: TopicEntityTable reinstalls the datasource on
+                // the 1 -> 0 transition, purging the block cache and refetching
+                // without the deleted row.
                 dispatch(setBiblioUpdatingEntityAdd(1));
                 setTimeout(() => {
                     dispatch(setBiblioUpdatingEntityAdd(0));
@@ -109,12 +138,19 @@ export default (props) => {
     }
 
 
+    // Infinite row model (SCRUM-6618): cell renderers mount for loading row
+    // stubs whose data is undefined until the block arrives. Without this
+    // guard the undefined read below crashed React and blanked the whole
+    // Biblio page; showing "Loading…" in the first column is the standard
+    // infinite-model row-loading indicator.
+    if (!props.data) return <span className="text-muted">Loading…</span>;
+
     // Only ABC-created tags may be edited or deleted: block imported/historic MOD tags
     // by requiring the source to be the ABC literature system professional_biocurator
     // (SCRUM-6304). secondary_data_provider_abbreviation still restricts to the curator's MOD.
-    let show_del = props.data.topic_entity_tag_source.source_method === 'abc_literature_system' &&
-        props.data.topic_entity_tag_source.validation_type === 'professional_biocurator' &&
-        props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel;
+    let show_del = props.data.tag_source.source_method === 'abc_literature_system' &&
+        props.data.tag_source.validation_type === 'professional_biocurator' &&
+        props.data.tag_source.secondary_data_provider_abbreviation === accessLevel;
     return (
     <span>
     { show_del   ?
@@ -155,9 +191,9 @@ export default (props) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button onClick={() => handleDeleteClick()} size='sm'><FontAwesomeIcon icon={faTrashAlt}/></Button>
+            <LightTip tip="Delete this tag"><Button onClick={() => handleDeleteClick()} size='sm' aria-label="Delete this tag"><FontAwesomeIcon icon={faTrashAlt}/></Button></LightTip>
             &nbsp;
-            <Button onClick={() => handleEditClick(props.data)} size='sm' variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button>
+            <LightTip tip="Edit this tag in the form above"><Button onClick={() => handleEditClick(props.data)} size='sm' aria-label="Edit this tag" variant={editTag === props.data.topic_entity_tag_id ? 'danger' : 'primary'}><FontAwesomeIcon icon={faEdit}/></Button></LightTip>
             &nbsp;
             <ValidatedTagsButton/>
         </div> : <ValidatedTagsButton/>}

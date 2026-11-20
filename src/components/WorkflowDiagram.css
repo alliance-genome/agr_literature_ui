@@ -223,6 +223,15 @@
   border-left-color: #d6a02f;
 }
 
+.workflow-legend-edge.start {
+  border-top-style: dashed;
+  border-color: #3d8b3d;
+}
+
+.workflow-legend-edge.start::after {
+  border-left-color: #3d8b3d;
+}
+
 .workflow-legend-edge.bidirectional {
   border-color: #8e62b8;
 }
@@ -442,6 +451,49 @@
   stroke: #b8862a;
 }
 
+/* Arrows from a start node (an event that begins a workflow) */
+.wf-edge.wf-edge-start path {
+  stroke: #3d8b3d;
+  stroke-dasharray: 6 3;
+}
+
+/* The condition a start or handoff arrow fires on */
+.wf-edge text.wf-edge-label {
+  font-size: 11px;
+  fill: #6b5a2e;
+  paint-order: stroke;
+  stroke: #f8f9fa;
+  stroke-width: 4px;
+  pointer-events: none;
+}
+
+/* Start nodes: events outside every workflow that begin one */
+.wf-start-node rect {
+  fill: #e8f5e8;
+  stroke: #3d8b3d;
+  stroke-width: 2;
+  cursor: grab;
+}
+
+.wf-start-node.wf-dragging rect {
+  cursor: grabbing;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+}
+
+.wf-start-node text.wf-start-label {
+  font-size: 14px;
+  font-weight: 600;
+  fill: #245c24;
+  pointer-events: none;
+}
+
+/* Heading of the lane for workflows nothing starts automatically */
+text.wf-lane-label {
+  font-size: 13px;
+  font-style: italic;
+  fill: #6c757d;
+}
+
 /* Bidirectional edges */
 .wf-edge.wf-bidirectional path {
   stroke: #9b6fbd;
@@ -484,6 +536,20 @@
   justify-content: center;
   height: 300px;
   color: var(--medium-red);
+}
+
+.workflow-diagram-notice {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  max-width: 45%;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #664d03;
+  background: #fff3cd;
+  border: 1px solid #ffe69c;
+  border-radius: 4px;
 }
 
 /* --- Tooltip (positioned div) --- */

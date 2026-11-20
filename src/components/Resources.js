@@ -41,6 +41,43 @@ const editorsFormatter = (params) => {
   }).join(', ');
 };
 
+// Alliance image permissions: a resource can carry several grants when the
+// permission differs by publication year (e.g. J Neurosci pre-2010 /
+// 2010-2014 / 2014-2025), so each formatter labels every entry with its year
+// range when one exists.
+const permissionYearRange = (perm) => {
+  // '' and null both mean "no bound", matching BiblioFileManagement's
+  // normalisation of the same fields
+  const start = perm.start_year || '';
+  const end = perm.end_year || '';
+  if (!start && !end) return '';
+  return `${start}-${end}`;
+};
+
+const withYearRange = (perm, text) => {
+  const range = permissionYearRange(perm);
+  return range ? `${range}: ${text}` : text;
+};
+
+// valueGetters (not valueFormatters) so AG Grid's text filter and sort work
+// on the readable string rather than on "[object Object]".
+const permissionsGetter = (field) => (params) => {
+  const perms = params.data?.alliance_permissions;
+  if (!Array.isArray(perms)) return '';
+  return perms
+    .filter((perm) => perm[field] != null && perm[field] !== '')
+    .map((perm) => withYearRange(perm, perm[field]))
+    .join(' | ');
+};
+
+const canDisplayImagesGetter = (params) => {
+  const perms = params.data?.alliance_permissions;
+  if (!Array.isArray(perms) || perms.length === 0) return '';
+  return perms
+    .map((perm) => withYearRange(perm, perm.can_display_images ? 'yes' : 'no'))
+    .join(' | ');
+};
+
 const Resources = () => {
   const [rowData, setRowData] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -80,9 +117,20 @@ const Resources = () => {
     { headerName: 'Cross References', field: 'cross_references', cellRenderer: CrossReferencesCellRenderer },
     { headerName: 'Editors', field: 'editors', valueFormatter: editorsFormatter },
     { headerName: 'Copyright License Id', field: 'copyright_license_id' },
-    { headerName: 'Copyright License', field: 'copyright_license' },
+    // copyright_license is a nested object; render its name rather than
+    // "[object Object]" (valueGetter so filter/sort see the string too)
+    { headerName: 'Copyright License', colId: 'copyright_license',
+      valueGetter: (params) => params.data?.copyright_license?.name ?? '' },
     { headerName: 'License List', field: 'license_list', valueFormatter: arrayFormatter },
     { headerName: 'License Start Year', field: 'license_start_year' },
+    { headerName: 'Alliance Permission', colId: 'alliance_permission',
+      valueGetter: permissionsGetter('name') },
+    { headerName: 'Alliance Can Display Images', colId: 'alliance_can_display_images',
+      valueGetter: canDisplayImagesGetter },
+    { headerName: 'Alliance Attribution Text', colId: 'alliance_attribution_text',
+      valueGetter: permissionsGetter('permission_text') },
+    { headerName: 'Alliance Permission Notes', colId: 'alliance_permission_notes',
+      valueGetter: permissionsGetter('notes') },
     { headerName: 'Date Created', field: 'date_created' },
     { headerName: 'Date Updated', field: 'date_updated' },
     { headerName: 'Created By', field: 'created_by' },

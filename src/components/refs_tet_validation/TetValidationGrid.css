@@ -286,6 +286,12 @@
   line-height: 1.3;
   padding: 0 0 2px;
   text-align: left;
+  /* Resolved ontology names can exceed the fixed Sources column width; clip to a
+     single line (keeping the one-line title-spacer height match that preserves
+     cross-column mini-row alignment) and expose the full text via the tooltip. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tetv-evidence-title-spacer {
   font-size: var(--tetv-small-font-size);
@@ -347,6 +353,25 @@
   color: #475467;
   font-weight: 600;
 }
+/* Nested group inside a topic group: the "Data assessment by other sources"
+   band that spans the source label, its Y/N/{N}E tag and the optional
+   confidence / note columns. Toned between the topic-name band above it and
+   the leaf sub-headers below so the three levels stay distinguishable. */
+.ag-header-group-cell.tetv-topic-subgroup-header {
+  background: #eef3f7;
+  font-size: var(--tetv-secondary-font-size);
+  font-weight: 700;
+  color: #3d5566;
+  border-right: 1px solid #d0dce7;
+  border-bottom: 1px solid #dbe4ec;
+}
+/* The biocurator column has no nested group above it, so AgGrid renders an
+   empty group cell in that row. Keep it blank rather than showing a stray
+   band of the sub-group tone. */
+.tetv-grid-wrapper .ag-header-group-cell-no-group {
+  background: #f8fafc;
+  border-right: 1px solid #d0dce7;
+}
 /* Alternating row tones for readability. Each paper is separated by a
    prominent slate-grey divider so curators clearly see where one paper ends
    and the next begins. */
@@ -377,6 +402,9 @@
   font-size: 1rem;
   font-weight: 700;
   padding: 7px 14px;
+  /* Y and N are single characters — keep both pills the same size so a column
+     of assessments reads as one consistent shape. */
+  min-width: 2.75rem;
   border-radius: 999px;
   text-align: center;
   white-space: normal;
@@ -398,6 +426,55 @@
   background: #fff0c9;
   color: #855600;
   border-color: #f3d27e;
+}
+/* SCRUM-6256: one pill per polarity, side by side, each listing its MODs. */
+.tetv-validation-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+.tetv-validation-letter {
+  display: block;
+}
+.tetv-validation-mods {
+  display: block;
+  font-size: var(--tetv-small-font-size);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.tetv-validation-mods strong {
+  font-weight: 800;
+}
+/* A pill that does not include the curator's own MOD: another MOD's
+   assessment. Muted and dashed so it can't be mistaken for their own. */
+.tetv-validation-status.tetv-validated-other {
+  background: #fff;
+  border-style: dashed;
+  border-width: 2px;
+  box-shadow: none;
+  opacity: 0.75;
+}
+.tetv-validation-by-mod {
+  font-weight: 600;
+}
+/* SCRUM-6784: a Y counted from the curator's mixed topic + entity tags rather
+   than an explicit topic-level assessment. */
+.tetv-validation-by-entities {
+  font-size: var(--tetv-small-font-size);
+  font-style: italic;
+}
+.tetv-validation-by-other {
+  color: #8a93a3;
+}
+.tetv-validation-conflict-note {
+  font-size: var(--tetv-small-font-size);
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff0c9;
+  color: #855600;
+  border: 1px solid #f3d27e;
 }
 .tetv-source-group {
   display: flex;
@@ -747,15 +824,46 @@
 }
 .tetv-header-help {
   align-items: center;
-  color: #7a8aa0;
-  cursor: help;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 0.85em;
   line-height: 1;
 }
-.tetv-header-help:hover {
+/* The ? itself is a bare <button> so it is keyboard operable; strip the
+   browser chrome so it still reads as an inline icon. */
+.tetv-header-help-btn {
+  align-items: center;
+  background: none;
+  border: none;
+  color: #7a8aa0;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.85em;
+  line-height: 1;
+  padding: 0;
+}
+.tetv-header-help-btn:hover,
+.tetv-header-help-btn:focus {
   color: var(--tetv-accent-dark);
+}
+/* The help popover is portalled to <body>, so it has to clear the fullscreen
+   grid wrapper (z-index 2000) — Bootstrap's default 1060 renders under it. */
+.popover.tetv-header-help-popover {
+  max-width: 420px;
+  z-index: 2100;
+}
+.tetv-header-help-popover .popover-header {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.tetv-header-help-popover .popover-body {
+  color: #333;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.5;
+  max-height: 60vh;
+  overflow-y: auto;
+  text-align: left;
+  white-space: normal;
 }
 /* Filter funnel icon rendered in HeaderWithHelp when the column opts in via
    headerComponentParams.showFilterIcon. Uses AgGrid's built-in
@@ -868,30 +976,9 @@
   font-weight: 600;
 }
 
-/* Fullscreen toggle pill in the top-right of the grid wrapper. Sits above
-   the sticky header (z-index 4) and the resize overlay (z-index 50). */
-.tetv-fullscreen-toggle {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  z-index: 60;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #d7e1e8;
-  border-radius: 999px;
-  color: var(--tetv-accent-dark);
-  cursor: pointer;
-  font-size: var(--tetv-secondary-font-size);
-  font-weight: 700;
-  line-height: 1.1;
-  padding: 6px 12px;
-  box-shadow: 0 2px 6px rgba(31, 41, 55, 0.08);
-}
-.tetv-fullscreen-toggle:hover {
-  background: #e8f3f6;
-  border-color: #a9ccd6;
+/* Expand/Shrink toggle: last item of the toolbar, pushed to its right edge. */
+.tetv-toolbar-view {
+  margin-left: auto;
 }
 
 /* Fullscreen mode: the wrapper covers the viewport and gains its own
@@ -908,10 +995,6 @@
   z-index: 2000;
   background: #fff;
 }
-.tetv-grid-wrapper.tetv-fullscreen .tetv-fullscreen-toggle {
-  position: fixed;
-}
-
 /* Optional curation-status section in the validation confirmation modal. */
 .tetv-curation-toggle {
   background: #fbfcfd;

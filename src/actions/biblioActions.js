@@ -160,15 +160,15 @@ export const changeFieldDatePublishedRange = (datePublishedRange) => {
 
 export const getCuratorSourceId = async (mod) => {
   try {
-    // /source/{source_type}/{source_method}/{mod_abbreviation}
-    const res = await api.get('/topic_entity_tag/source/ATP:0000036/abc_literature_system/' + mod + '/' + mod);
-    return res.data.topic_entity_tag_source_id;
+    // GET /tag_source/{source_evidence_assertion}/{source_method}/{data_provider}/{secondary_data_provider_abbreviation}
+    const res = await api.get('/tag_source/ATP:0000036/abc_literature_system/' + mod + '/' + mod);
+    return res.data.tag_source_id;
   } catch (error) {
     if (error.response?.status === 404) {
       try {
-        // POST /topic_entity_tag/source returns the full TopicEntityTagSourceSchemaShow
+        // POST /tag_source returns the full TagSourceSchemaShow
         // object on 201 — extract the id field, matching the GET above.
-        const res = await api.post('/topic_entity_tag/source', {
+        const res = await api.post('/tag_source', {
           "source_evidence_assertion": "ATP:0000036",
           "source_method": "abc_literature_system",
           "validation_type": "professional_biocurator",
@@ -178,7 +178,7 @@ export const getCuratorSourceId = async (mod) => {
           "created_by": "00u1mhf3mf28xjpPt5d7",
           "updated_by": "00u1mhf3mf28xjpPt5d7",
         });
-        return res.data.topic_entity_tag_source_id;
+        return res.data.tag_source_id;
       } catch (error) {
         return undefined;
       }
@@ -293,7 +293,10 @@ export const updateButtonBiblioEntityEditEntity = (accessToken, tetId, payload, 
       }));
 } };
 
-export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
+// options.handlesConflict: the caller renders structured 409 "tag already
+// exists" responses itself (checkForExistingTags' warning table), so those must
+// not also be appended to the Entity Error modal.
+export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel, options = {}) => {
   return dispatch => {
     return new Promise((resolve, reject) => {
       // accessToken in updateArrayData kept for backwards compatibility - auth handled by API client interceptor
@@ -323,9 +326,11 @@ export const updateButtonBiblioEntityAdd = (updateArrayData, accessLevel) => {
         .catch(err => {
           const errorMessage = 'error: ' + subPath + ' ' + err;
           console.error(errorMessage);
+          const conflictHandled = Boolean(options.handlesConflict) &&
+            err?.response?.status === 409 && Boolean(err?.response?.data?.detail?.reason);
           dispatch({
             type: 'UPDATE_BUTTON_BIBLIO_ENTITY_ADD',
-            payload: { responseMessage: errorMessage, accessLevel: accessLevel }
+            payload: { responseMessage: errorMessage, accessLevel: accessLevel, conflictHandled: conflictHandled }
           });
           // Preserve axios response on the rejection so callers can read structured
           // error bodies (e.g. 409 conflict detail). See checkForExistingTags.
@@ -725,6 +730,75 @@ export const fetchDisplayTagData = async () => {
   }
 };
 
+export const fetchDataContextData = async () => {
+  // SCRUM-5697. data_context is a hierarchy under ATP:0000323 "data context".
+  // Since the 2026-10-30 ATP release (SCRUM-6815) it is:
+  //   ATP:0000324 mentioned data -> ATP:0000360 background information
+  //                                 ATP:0000405 experimental data
+  //                                   -> ATP:0000406 experimentally studied entity
+  //                                        -> ATP:0000407, ATP:0000408
+  //                                   -> ATP:0000409 supporting experimental entity
+  //                                        -> ATP:0000327, ATP:0000328, ATP:0000410
+  //   ATP:0000404 nomenclature error
+  // ATP:0000325 experimentally studied data and ATP:0000326 marker data were
+  // deprecated and left the tree, so the live query no longer offers them.
+  //
+  // Every term below the root is offered except the root's own direct children
+  // that have children of their own (today only ATP:0000324 mentioned data),
+  // which are organisational groupings rather than curation choices. Deeper
+  // terms with children are offered on purpose: ATP:0000405 and ATP:0000406 are
+  // the FB, ZFIN and WB defaults, so they have to be selectable. A direct child
+  // with no children of its own (ATP:0000404) is a choice, not a grouping.
+  // Nothing is hardcoded, so renaming or adding a term needs no UI change.
+  //
+  // Note the /<direct_children_only>/<include_self>/<include_names> path form is
+  // required: the short /search_descendants/<curie> form returns bare curie
+  // strings, not {curie, name} objects.
+  // What the live query returns for the tree above.
+  const fallbackDataContextData = [
+    { curie: "ATP:0000360", name: "background information" },
+    { curie: "ATP:0000405", name: "experimental data" },
+    { curie: "ATP:0000406", name: "experimentally studied entity" },
+    { curie: "ATP:0000407", name: "primary studied entity" },
+    { curie: "ATP:0000408", name: "additional studied entity" },
+    { curie: "ATP:0000409", name: "supporting experimental entity" },
+    { curie: "ATP:0000327", name: "genetic marker" },
+    { curie: "ATP:0000328", name: "expression marker" },
+    { curie: "ATP:0000410", name: "experimental control" },
+    { curie: "ATP:0000404", name: "nomenclature error" },
+  ];
+
+  const descendantsUrl = (curie, directOnly) =>
+    `/ontology/search_descendants/${curie}/${directOnly}/false/true`;
+
+  try {
+    const [allRes, directRes] = await Promise.all([
+      api.get(descendantsUrl("ATP:0000323", false)),
+      api.get(descendantsUrl("ATP:0000323", true)),
+    ]);
+
+    const all = Array.isArray(allRes.data) ? allRes.data : [];
+    const direct = Array.isArray(directRes.data) ? directRes.data : [];
+    if (all.length === 0) {
+      return fallbackDataContextData;
+    }
+
+    // Which of the root's direct children have children of their own.
+    const directChildCounts = await Promise.all(
+      direct.map((t) => api.get(descendantsUrl(t.curie, true))
+        .then((res) => (Array.isArray(res.data) ? res.data.length : 0))));
+    const groupingCuries = new Set(
+      direct.filter((_t, i) => directChildCounts[i] > 0).map((t) => t.curie));
+    const options = all.filter((t) => t && t.curie && !groupingCuries.has(t.curie));
+    // If the shape ever changes such that everything is filtered out, prefer the
+    // known-good list over an empty dropdown.
+    return options.length > 0 ? options : fallbackDataContextData;
+  } catch (error) {
+    console.error("Error occurred in fetchDataContextData:", error);
+    return fallbackDataContextData;
+  }
+};
+
 export const biblioQueryReferenceCurie = (referenceCurie) => dispatch => {
   console.log('action in biblioQueryReferenceCurie action');
   const createBiblioQueryReferenceCurie = async () => {
@@ -791,6 +865,25 @@ export const changeBiblioSupplementExpandToggler = (e) => {
   return {
     type: 'CHANGE_BIBLIO_SUPPLEMENT_EXPAND_TOGGLER',
     payload: biblioSupplementExpandTogglerSelected
+  };
+};
+
+export const openBiblioAuthorReorder = () => {
+  return {
+    type: 'BIBLIO_AUTHOR_REORDER_OPEN'
+  };
+};
+
+export const closeBiblioAuthorReorder = () => {
+  return {
+    type: 'BIBLIO_AUTHOR_REORDER_CLOSE'
+  };
+};
+
+export const setBiblioAuthorReorderFullScreen = (fullScreen) => {
+  return {
+    type: 'BIBLIO_AUTHOR_REORDER_FULL_SCREEN',
+    payload: fullScreen
   };
 };
 
@@ -987,6 +1080,13 @@ export const setTopicEntityTags = (tags, referenceCurie) => {
 let pendingTopicEntityTagsRequest = null;
 let pendingTopicEntityTagsCurie = null;
 
+// One page is fetched; bulk-loaded papers (e.g. the ZFIN large-scale loads,
+// SCRUM-6614) can exceed this, so the fetch also asks for the true total and
+// sorts by source_method — curated sources like abc_literature_system sort
+// before the *_reference_curation bulk loads, so anything truncated is
+// bulk-loaded rows, never curator-entered tags.
+const TET_FETCH_PAGE_SIZE = 8000;
+
 // Load all topic entity tags for a reference into the redux store so that any
 // reference-based (Biblio) page can reuse them (e.g. the entity counts summary)
 // without each component issuing its own request.
@@ -1016,7 +1116,14 @@ export const fetchTopicEntityTags = (referenceCurie, forceRefresh = false) => {
 
     pendingTopicEntityTagsRequest = (async () => {
       try {
-        const url = '/topic_entity_tag/by_reference/' + referenceCurie + '?page=1&page_size=8000';
+        const baseUrl = '/topic_entity_tag/by_reference/' + referenceCurie;
+        // The source_method sort keeps curated tags inside the page cap. The
+        // TET table pages server-side (SCRUM-6618) and the entity counts and
+        // curator-validation gating are server-computed (SCRUM-6620) — this
+        // fetch now feeds only the setAll* filter lists, QuickTopicAddition,
+        // and the older-backend fallbacks in the Actions cell and
+        // EntityCountsByMod. Removing it is SCRUM-6620's last step.
+        const url = baseUrl + '?page=1&page_size=' + TET_FETCH_PAGE_SIZE + '&sort_by=source_method';
         const response = await api.get(url);
         const tags = response.data || [];
         // Only dispatch if this is still the curie we want
@@ -1240,6 +1347,14 @@ export const fetchTaxonData = () => {
     return pendingTaxonRequest;
   };
 };
+
+// Add taxon curie -> name entries looked up on demand (e.g. a genus a curator
+// picked in the species picker), which the MOD-taxa list from fetchTaxonData
+// does not cover.
+export const mergeTaxonNames = (curieToName) => ({
+  type: 'MERGE_TAXON_NAMES',
+  payload: { curieToName }
+});
 
 export const clearTaxonData = () => {
   // Also clear pending request when clearing data

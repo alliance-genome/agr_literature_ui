@@ -1,0 +1,95 @@
+// Search-card display profile (SCRUM-6512).
+//
+// One profile object describes how a search-result card renders: which sections
+// show, in what vertical order, which cross-reference prefixes are listed,
+// whether the action icons (TET / PDF / images) show, and whether the person
+// icon shows (it opens the paper's authors on the Biblio person screen; author
+// names stay plain text, reserved for a future link to individual person
+// records). SearchResults renders from it; the Layout modal edits it; named
+// profiles persist per-user via person_settings under the 'search_display'
+// namespace — a namespace deliberately separate from 'reference_search' saved
+// searches, so what to search for and how cards look are saved and loaded
+// independently.
+
+export const SEARCH_DISPLAY_COMPONENT = 'search_display';
+
+// The card's customizable sections, in default order. The title is not a
+// section: it is the card's identity/link and always renders first. The
+// journal shares the publication date's line, with the rest of the
+// bibliographic info (SCRUM-1463); it was its own 'journal' section, which a
+// saved profile could leave below the matching text.
+export const CARD_SECTIONS = [
+  { id: 'xrefs', label: 'Cross-references' },
+  { id: 'authors', label: 'Authors' },
+  { id: 'pubDate', label: 'Journal and publication date' },
+  { id: 'abstract', label: 'Abstract' },
+  { id: 'matchingText', label: 'Matching text' },
+];
+
+export const DEFAULT_DISPLAY_PREFS = {
+  sectionOrder: CARD_SECTIONS.map((s) => s.id),
+  hiddenSections: [],
+  showIcons: true,
+  // Hidden (not shown) prefixes rather than a shown-list: a prefix this
+  // profile has never seen (new MOD, new resource type) defaults to visible
+  // instead of silently vanishing.
+  hiddenXrefPrefixes: [],
+  showPersonIcon: true,
+};
+
+// The prefix an xref curie is selected by: "PMID:123" -> "PMID".
+export const xrefPrefix = (curie) => String(curie || '').split(':')[0];
+
+// Journal info for the card's journal (curator request: e.g. eLife is
+// excluded from the corpus by review model, so seeing the journal on the card
+// saves a trip to the biblio display). The card shows the hit's resource_title;
+// this is the fallback when a hit has none. The full citation reads
+// "Authors, (Year) Title. Journal Vol(Issue):Pages", so take the text after the
+// title, which the card already knows. Both the
+// citation and the title can carry markup (<i>species</i> names), and often
+// with different tag placement, so strip markup from BOTH before matching —
+// the result renders as plain text either way. When the title still cannot be
+// found, fall back to the (stripped) full citation rather than guessing.
+export const stripMarkup = (s) => String(s || '').replace(/<[^>]+>/g, '');
+
+export const journalInfoFromCitation = (citation, title) => {
+  const cit = stripMarkup(citation).trim();
+  if (!cit) return '';
+  const plainTitle = stripMarkup(title).trim();
+  if (plainTitle) {
+    const idx = cit.indexOf(plainTitle);
+    if (idx >= 0) {
+      const tail = cit.slice(idx + plainTitle.length).replace(/^[.\s]+/, '').trim();
+      if (tail) return tail;
+    }
+  }
+  return cit;
+};
+
+// Merge a stored profile over the defaults, tolerating older/partial payloads:
+// unknown section ids are dropped, and a section missing from a saved order is
+// placed after the section that precedes it in the default order (so adding a
+// section later never blanks it for existing profiles, nor drops it at the
+// bottom of the card, below the matching text).
+export const normalizeDisplayPrefs = (raw) => {
+  const p = raw && typeof raw === 'object' ? raw : {};
+  const known = CARD_SECTIONS.map((s) => s.id);
+  const order = (Array.isArray(p.sectionOrder) ? p.sectionOrder : [])
+    .filter((id, i, ids) => known.includes(id) && ids.indexOf(id) === i);
+  known.forEach((id, i) => {
+    if (order.includes(id)) return;
+    const prev = known.slice(0, i).reverse().find((k) => order.includes(k));
+    order.splice(prev ? order.indexOf(prev) + 1 : 0, 0, id);
+  });
+  return {
+    sectionOrder: order,
+    hiddenSections: (Array.isArray(p.hiddenSections) ? p.hiddenSections : [])
+      .filter((id) => known.includes(id)),
+    showIcons: p.showIcons !== false,
+    hiddenXrefPrefixes: Array.isArray(p.hiddenXrefPrefixes) ? p.hiddenXrefPrefixes : [],
+    // showPersonIcon replaced linkAuthorsToPerson (the "Authors :" label link,
+    // now a rail icon): honor the legacy key when a saved profile predates it.
+    showPersonIcon:
+      (p.showPersonIcon !== undefined ? p.showPersonIcon : p.linkAuthorsToPerson) !== false,
+  };
+};

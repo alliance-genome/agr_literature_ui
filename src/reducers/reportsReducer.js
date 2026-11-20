@@ -1,10 +1,7 @@
 import {
   REPORTS_SET_DATE_RANGE_DICT,
   REPORTS_SET_DATE_OPTION_DICT,
-  REPORTS_SET_DATE_FREQUENCY_DICT,
-  REPORTS_SET_QCREPORT_OBSOLETE_ENTITIES,
-  REPORTS_SET_QCREPORT_REDACTED_PAPERS,
-  REPORTS_SET_QCREPORT_DUPLICATE_ORCIDS
+  REPORTS_SET_DATE_FREQUENCY_DICT
 } from '../actions/reportsActions';
 
 import _ from "lodash";
@@ -16,9 +13,6 @@ const initialState = {
   dateRangeDict: {},
   dateOptionDict: {},
   dateFrequencyDict: {},
-  qcReportObsoleteEntities: { 'date-produced': null, 'obsolete_entities': null },
-  qcReportRedactedPapers: {'date-produced': null, 'redacted-references': null},
-  qcReportDuplicateOrcids: { 'date-produced': null, 'duplicate_orcids': null },
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -60,23 +54,6 @@ export default function(state = initialState, action) {
       return {
         ...state,
         dateFrequencyDict: dateFrequencyDictCopy
-      }
-    case REPORTS_SET_QCREPORT_OBSOLETE_ENTITIES:
-      console.log('reducer REPORTS_SET_QCREPORT_DICT');
-      console.log(action.payload.qcReportObsoleteEntities);
-      return {
-        ...state,
-        qcReportObsoleteEntities: action.payload.qcReportObsoleteEntities
-      }
-    case REPORTS_SET_QCREPORT_REDACTED_PAPERS:
-      return {
-        ...state,
-        qcReportRedactedPapers: action.payload.qcReportRedactedPapers
-      }
-    case REPORTS_SET_QCREPORT_DUPLICATE_ORCIDS:
-      return {
-        ...state,
-        qcReportDuplicateOrcids: action.payload.qcReportDuplicateOrcids
       }
     default:
       return state;

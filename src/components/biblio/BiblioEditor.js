@@ -1,5 +1,7 @@
 // import { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import HelpDocLink, { HELP_DOC_URLS } from '../HelpDocLink';
 
 import RowDivider from './RowDivider';
 import ModalGeneric from './ModalGeneric';
@@ -36,6 +38,7 @@ import { biblioAddNewRowDict } from '../../actions/biblioActions';
 import { updateButtonBiblio } from '../../actions/biblioActions';
 import { closeBiblioUpdateAlert } from '../../actions/biblioActions';
 import { changeBiblioAuthorExpandToggler } from '../../actions/biblioActions';
+import { openBiblioAuthorReorder } from '../../actions/biblioActions';
 import { biblioRevertField } from '../../actions/biblioActions';
 import { biblioRevertFieldArray } from '../../actions/biblioActions';
 import { biblioRevertAuthorArray } from '../../actions/biblioActions';
@@ -44,12 +47,16 @@ import { setBiblioEditorModalText } from '../../actions/biblioActions';
 import { changeFieldDatePublishedRange } from '../../actions/biblioActions';
 import { getXrefPatterns } from '../../actions/biblioActions';
 
+import { buildAuthorSavePlan, authorPlanCallCount, maxAuthorOrder } from '../../utils/authorOrdering';
+import { updateBiblioAuthors } from '../../actions/authorOrderActions';
+
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert'
 import Button from 'react-bootstrap/Button'
+import LightTip from '../LightTip';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUndo } from '@fortawesome/free-solid-svg-icons'
@@ -61,6 +68,15 @@ import {useEffect, useState, Fragment} from "react";
 import BiblioLayoutPreferenceModal from '../settings/BiblioLayoutPreferenceModal';
 import { SECTION_DEFS, sectionIdForFieldIndex, layoutToCssGrid } from './biblioEditorSections';
 import './biblioEditorSections.css';
+
+const REVERT_TOOLTIP = 'Revert - discard unsaved edits to this row and restore the saved database value';
+const DELETE_TOOLTIP = 'Stage deletion - the database delete happens when you press Update Biblio Data';
+
+// Right-edge controls open their tooltip to the left so the text does not
+// clip at the window edge (native title tooltips always open at the cursor).
+const LeftTip = ({ tip, children }) => (
+  <LightTip tip={tip} placement="left">{children}</LightTip>
+);
 
 
 // if passing an object with <Redirect push to={{ pathname: "/Biblio", state: { pie: "the pie" } }} />, would access new state with
@@ -82,6 +98,12 @@ export const datasetXrefPrefixes = ['PDB', 'GEO'];
 export const fieldsPubmed = [ 'title', 'authors', 'abstract', 'pubmed_types', 'resource_curie', 'resource_title', 'volume', 'issue_name', 'page_range', 'editors', 'publisher', 'language', 'pubmed_publication_status', 'date_published', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'keywords', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract' ];
 export const fieldsDisplayOnly = [ 'citation', 'pubmed_types', 'resource_title', 'pubmed_publication_status', 'date_arrived_in_pubmed', 'date_last_modified_in_pubmed', 'date_created', 'mesh_terms', 'pubmed_abstract_languages', 'plain_language_abstract', 'obsolete_references' ];
 export const fieldsDatePublished = [ 'date_published', 'date_published_start', 'date_published_end' ];
+
+// The reference has unsaved work. BiblioSubmitUpdateButton paints the Update button with this and
+// ReorderAuthorsButton is gated on it, so both must read exactly the same thing: a reorder saved
+// while any edit is pending would be silently discarded by the refetch that follows the save.
+export const hasUnsavedChanges = (referenceJsonHasChange) =>
+  Object.keys(referenceJsonHasChange || {}).length > 0;
 
 
 export const fieldTypeDict = {}
@@ -305,7 +327,7 @@ const BiblioSubmitUpdateButton = () => {
   const referenceJsonDb = useSelector(state => state.biblio.referenceJsonDb);
   const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
   let updatedFlag = '';
-  if (Object.keys(referenceJsonHasChange).length > 0) { updatedFlag = 'updated-biblio-button'; }
+  if (hasUnsavedChanges(referenceJsonHasChange)) { updatedFlag = 'updated-biblio-button'; }
 
   function generateCrossReferenceUpdateJson(crossRefDict, referenceCurie) {
     let crossRefCurie = crossRefDict['curie']
@@ -366,84 +388,14 @@ const BiblioSubmitUpdateButton = () => {
     } } }
 
 
+    // Authors are handled by a dedicated thunk: the calls are order-dependent (deletes free
+    // the orders the flatten hands out, and the flatten needs the created authors' ids), and
+    // the forApiArray loop below is fire-and-forget.
+    let authorPlan = null;
+    let authorCallCount = 0;
     if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-      const authorFields = [ 'author_order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations' ];
-
-      // 1. Delete authors marked for deletion
-      for (const [index, authorDict] of referenceJsonLive['authors'].entries()) {
-        if (authorDict.deleteMe === true && authorDict.author_id !== 'new') {
-          let subPath = 'author/' + authorDict['author_id'];
-          let method = 'DELETE';
-          let array = [subPath, updateJson, method, index, null, null];
-          forApiArray.push(array);
-        }
-      }
-
-      // 2. Collect surviving authors (not deleted), keep original order
-      let survivingAuthors = referenceJsonLive['authors']
-        .filter(authorDict => !(authorDict.deleteMe === true))
-        .map(authorDict => ({
-          authorDict,
-          originalOrder: authorDict.author_order
-        }));
-      // Sort by original order
-      survivingAuthors.sort((a, b) => a.originalOrder - b.originalOrder);
-
-      // 3. Reassign order and track if order changed
-      for (let i = 0; i < survivingAuthors.length; i++) {
-        let { authorDict, originalOrder } = survivingAuthors[i];
-        let newOrder = i + 1;
-        authorDict.author_order = newOrder;  // update local order
-        survivingAuthors[i].orderChanged = (originalOrder !== newOrder);
-      }
-
-      // 4. Patch existing authors (with author_id !== 'new') if needsChange or reordered
-      for (const { authorDict, orderChanged } of survivingAuthors) {
-        if (authorDict.author_id !== 'new' && (authorDict.needsChange || orderChanged)) {
-          let updateJson = { reference_curie: referenceCurie };
-          for (const field of authorFields) {
-            if (field in authorDict) {
-              if (field === 'orcid' && authorDict['orcid'] !== null) {
-                let orcidValue = authorDict['orcid'].toUpperCase();
-                if (orcidValue !== '' && !orcidValue.match(/^ORCID:(.*)$/)) {
-                  orcidValue = 'ORCID:' + orcidValue;
-                }
-                updateJson['orcid'] = orcidValue;
-              } else if (field !== 'orcid') {
-                updateJson[field] = authorDict[field];
-              }
-            }
-          }
-          let subPath = 'author/' + authorDict['author_id'];
-          let method = 'PATCH';
-          let array = [subPath, updateJson, method, null, null, null];
-          forApiArray.push(array);
-        }
-      }
-
-      // 5. Create new authors (author_id === 'new') with POST and correct order
-      for (const { authorDict } of survivingAuthors) {
-        if (authorDict.author_id === 'new') {
-          let updateJson = { reference_curie: referenceCurie };
-          for (const field of authorFields) {
-            if (field in authorDict) {
-              if (field === 'orcid' && authorDict['orcid'] !== null) {
-                let orcidValue = authorDict['orcid'].toUpperCase();
-                if (orcidValue !== '' && !orcidValue.match(/^ORCID:(.*)$/)) {
-                  orcidValue = 'ORCID:' + orcidValue;
-                }
-                updateJson['orcid'] = orcidValue;
-              } else if (field !== 'orcid') {
-                updateJson[field] = authorDict[field];
-              }
-            }
-          }
-          let subPath = 'author/';
-          let method = 'POST';
-          let array = [subPath, updateJson, method, null, 'authors', 'author_id'];
-          forApiArray.push(array);
-        }
-      }
+      authorPlan = buildAuthorSavePlan(referenceJsonLive['authors'], referenceCurie);
+      authorCallCount = authorPlanCallCount(authorPlan);
     }
 
 
@@ -542,7 +494,7 @@ const BiblioSubmitUpdateButton = () => {
             forApiArray.push( array ); }
     } } }
 
-    let dispatchCount = forApiArray.length;
+    let dispatchCount = forApiArray.length + authorCallCount;
 
     // console.log('dispatchCount ' + dispatchCount)
     dispatch(setBiblioUpdating(dispatchCount))
@@ -553,6 +505,10 @@ const BiblioSubmitUpdateButton = () => {
     for (const arrayData of forApiArray.values()) {
       arrayData.unshift(accessToken)
       dispatch(updateButtonBiblio(arrayData))
+    }
+
+    if (authorCallCount > 0) {
+      dispatch(updateBiblioAuthors(referenceCurie, authorPlan));
     }
     // console.log('end updateBiblio')
   } // function updateBiblio(referenceCurie, referenceJsonLive)
@@ -567,7 +523,7 @@ const BiblioSubmitUpdateButton = () => {
   return (
        <Row className="form-group row" >
          <Col className="form-label col-form-label" sm="2" ></Col>
-         <Col sm="10" ><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => dispatch(validateFormUpdateBiblio())}>Update Biblio Data</div></Col>
+         <Col sm="10" ><LightTip tip="Save all staged changes to the database"><div className={`form-control biblio-button ${updatedFlag}`} type="submit" onClick={() => dispatch(validateFormUpdateBiblio())}>Update Biblio Data</div></LightTip></Col>
        </Row>
   );
 } // const BiblioSubmitUpdateButton
@@ -589,21 +545,10 @@ const ColEditorSelect = ({fieldType, fieldName, value, colSize, updatedFlag, dis
               </Form.Control>
             </Col>); }
 
-const ColEditorSelectNumeric = ({fieldType, fieldName, value, colSize, updatedFlag, disabled, placeholder, fieldKey, dispatchAction, minNumber, maxNumber}) => {
-  const dispatch = useDispatch();
-  const numericOptionElements = []
-  for (let i = minNumber; i <= maxNumber; i++) {
-    numericOptionElements.push(<option key={`${fieldKey} ${i}`}>{i}</option>) }
-  return (  <Col sm={colSize}>
-              <Form.Control as={fieldType} id={fieldKey} type="{fieldName}" value={value} className={`form-control ${updatedFlag}`} disabled={disabled} placeholder={placeholder} onChange={(e) => dispatch(dispatchAction(e))} >
-              {numericOptionElements}
-              </Form.Control>
-            </Col>); }
-
-const ColEditorCheckbox = ({colSize, label, updatedFlag, disabled, fieldKey, checked, dispatchAction}) => {
+const ColEditorCheckbox = ({colSize, label, updatedFlag, disabled, fieldKey, checked, dispatchAction, title}) => {
   const dispatch = useDispatch();
   return (  <Col sm={colSize} className={`Col-checkbox ${updatedFlag}`} >
-              <Form.Check inline className={`ColEditorCheckbox`} checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} />
+              {title ? (<LeftTip tip={title}><span style={{ display: 'inline-flex' }}><Form.Check inline className={`ColEditorCheckbox`} checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} /></span></LeftTip>) : <Form.Check inline className={`ColEditorCheckbox`} checked={checked} disabled={disabled} type='checkbox' label={label} id={fieldKey} onChange={(e) => dispatch(dispatchAction(e))} />}
             </Col>); }
 
 const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
@@ -624,7 +569,7 @@ const RowEditorString = ({fieldName, referenceJsonLive, referenceJsonDb}) => {
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
   const label = getLabel(fieldName);
   let otherColSize = 9;
-  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+  let revertElement = (<Col sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName}`} variant="outline-secondary" aria-label={`Revert ${fieldName}`} onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
   if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
   let colEditorElement = (<ColEditorSimple key={`colElement ${fieldName}`} fieldType={fieldType} fieldName={fieldName} colSize={otherColSize} value={valueLive} updatedFlag={updatedFlag} placeholder={label} disabled={disabled} fieldKey={fieldName} dispatchAction={changeFieldReferenceJson} />)
   if (fieldType === 'select') {
@@ -647,7 +592,7 @@ const RowEditorArrayString = ({fieldIndex, fieldName, referenceJsonLive, referen
       let fieldType = 'input';
       for (const [index, valueLive] of referenceJsonLive[fieldName].entries()) {
         let otherColSize = 9;
-        let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+        let revertElement = (<Col sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
         if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 10; }
         let valueDb = ''; let updatedFlag = '';
         if (typeof referenceJsonDb[fieldName][index] !== 'undefined') { valueDb = referenceJsonDb[fieldName][index] }
@@ -684,7 +629,7 @@ const RowEditorDatePublished = ({fieldName, referenceJsonLive, referenceJsonDb})
   let fieldType = 'input';
   if (fieldName in fieldTypeDict) { fieldType = fieldTypeDict[fieldName] }
   let otherColSize = 5;
-  let revertElement = (<Col sm="1"><Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertDatePublished(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+  let revertElement = (<Col sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName}`} variant="outline-secondary" aria-label={`Revert ${fieldName}`} onClick={(e) => dispatch(biblioRevertDatePublished(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
   if (disabled) { revertElement = (<></>); otherColSize = 6; }
   return ( <Form.Group as={Row} key={fieldName} >
              <Form.Label column sm="2" className={`Col-general`} >{fieldName}</Form.Label>
@@ -756,9 +701,9 @@ const RowEditorModReferenceTypes = ({fieldIndex, fieldName, referenceJsonLive, r
     for (const[index, modRefDict] of referenceJsonLive['mod_reference_types'].entries()) {
       let otherColSize = 5;
 //       let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
       if ('mod_reference_type_id' in modRefDict && modRefDict['mod_reference_type_id'] !== 'new') {
-        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldModReferenceReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
+        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Delete ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(deleteFieldModReferenceReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}</Col>); }
       if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 6; }
       let valueLiveModAbbreviation = modRefDict['mod_abbreviation']; let valueDbModAbbreviation = ''; let updatedFlagModAbbreviation = '';
       let valueLiveReferenceType = modRefDict['reference_type']; let valueDbReferenceType = ''; let updatedFlagReferenceType = '';
@@ -834,33 +779,18 @@ const RowEditorModAssociation = ({fieldIndex, fieldName, referenceJsonLive, refe
 	  let otherColSizeB = 4;
 	  let buttonsElement = (
 	    <Col className="Col-editor-buttons" sm="1">
-              <Button
-	        id={`revert ${fieldName} ${index}`}
-	        variant="outline-secondary"
-	        onClick={(e) => dispatch(biblioRevertFieldArray(e))}
-	      >
-		<FontAwesomeIcon icon={faUndo} />
-              </Button>{' '}
+              <LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`}
+	        variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}
 	    </Col>
 	  );
 	  if ('mod_corpus_association_id' in modAssociationDict &&
 	      modAssociationDict['mod_corpus_association_id'] !== 'new') {
             buttonsElement = (
 	      <Col className="Col-editor-buttons" sm="1">
-		<Button
-		  id={`revert ${fieldName} ${index}`}
-		  variant="outline-secondary"
-		  onClick={(e) => dispatch(biblioRevertFieldArray(e))}
-		>
-		  <FontAwesomeIcon icon={faUndo} />
-		</Button>{' '}
-		<Button
-		  id={`delete ${fieldName} ${index}`}
-		  variant="outline-secondary"
-		  onClick={(e) => dispatch(deleteFieldModAssociationReferenceJson(e))}
-		>
-		  <FontAwesomeIcon icon={faTrashAlt} />
-		</Button>{' '}
+		<LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`}
+		  variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}
+		<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete ${fieldName} ${index}`}
+		  variant="outline-secondary" aria-label={`Delete ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(deleteFieldModAssociationReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}
               </Col>
 	    );
 	  }
@@ -1023,7 +953,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
       const curie = prefix + ':' + value;
       var re = new RegExp(pattern);
       if (re.test(curie) === false) {
-        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' check your entry and try again.'));
+        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' — expected ' + pattern + '. Check your entry and try again.'));
       }
     } else {
       console.log('xref prefix ' + prefix + ' not allowed');
@@ -1036,9 +966,9 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
       if (datasetXrefPrefixes.includes(curiePrefix)) { continue; }
       let otherColSize = 6;
 //       let buttonsElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
       if ('cross_reference_id' in crossRefDict && crossRefDict['cross_reference_id'] !== 'new') {
-        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
+        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Delete ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}</Col>); }
       if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 7; }
 
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
@@ -1086,7 +1016,7 @@ const RowEditorCrossReferences = ({fieldIndex, fieldName, referenceJsonLive, ref
             <Col sm={otherColSize}>
               <Form.Control as="input" key={`colElement cross_references ${index} curieId`} id={`cross_references ${index} curie id`}  type="cross_references" value={valueLiveCurieId} className={`form-control ${updatedFlagCurieId}`} disabled={disabled} placeholder="curie" onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))} onBlur={ (e) => validateXref('reference', xrefPatterns, valueLiveCuriePrefix, valueLiveCurieId) } />
             </Col>
-            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" title="Obsolete = this ID is no longer valid for the paper. Uncheck and press Update Biblio Data to make it valid again." updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
             {buttonsElement}
           </Form.Group>); } } }
   if (disabled === '') {
@@ -1112,7 +1042,7 @@ const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
       const curie = prefix + ':' + value;
       var re = new RegExp(pattern);
       if (re.test(curie) === false) {
-        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' check your entry and try again.'));
+        dispatch(setBiblioEditorModalText('Fail to match xref pattern for ' + curie + ' — expected ' + pattern + '. Check your entry and try again.'));
       }
     } else {
       console.log('xref prefix ' + prefix + ' not allowed');
@@ -1124,9 +1054,9 @@ const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
       const [livePrefix] = splitCurie(crossRefDict['curie']);
       if (!datasetXrefPrefixes.includes(livePrefix)) { continue; }
       let otherColSize = 6;
-      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert cross_references ${index}`} variant="outline-secondary" aria-label={`Revert cross_references row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
       if ('cross_reference_id' in crossRefDict && crossRefDict['cross_reference_id'] !== 'new') {
-        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete cross_references ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>); }
+        buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert cross_references ${index}`} variant="outline-secondary" aria-label={`Revert cross_references row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete cross_references ${index}`} variant="outline-secondary" aria-label={`Delete cross_references row ${index + 1}`} onClick={(e) => dispatch(deleteFieldCrossReferencesReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}</Col>); }
       if (disabled === 'disabled') { buttonsElement = (<></>); otherColSize = 7; }
 
       let valueLiveCurie = crossRefDict['curie']; let valueDbCurie = '';
@@ -1174,7 +1104,7 @@ const RowEditorDatasets = ({fieldIndex, fieldName, referenceJsonLive, referenceJ
             <Col sm={otherColSize}>
               <Form.Control as="input" key={`colElement cross_references ${index} curieId`} id={`cross_references ${index} curie id`} type="cross_references" value={valueLiveCurieId} className={`form-control ${updatedFlagCurieId}`} disabled={disabled} placeholder="curie" onChange={(e) => dispatch(changeFieldCrossReferencesReferenceJson(e))} onBlur={ (e) => validateXref('reference', xrefPatterns, valueLiveCuriePrefix, valueLiveCurieId) } />
             </Col>
-            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
+            <ColEditorCheckbox key={`colElement cross_references ${index} is_obsolete`} colSize="1" label="obsolete" title="Obsolete = this ID is no longer valid for the paper. Uncheck and press Update Biblio Data to make it valid again." updatedFlag={updatedFlagIsObsolete} disabled={disabled} fieldKey={`cross_references ${index} is_obsolete`} checked={obsoleteChecked} dispatchAction={changeFieldCrossReferencesReferenceJson} />
             {buttonsElement}
           </Form.Group>); } } }
   return (<>{rowDatasetsElements}</>); }
@@ -1192,7 +1122,7 @@ const RowEditorReferenceRelations = ({fieldIndex, fieldName, referenceJsonLive, 
   if (fieldName in referenceJsonLive && referenceJsonLive[fieldName] !== null) {
     for (const[index, comcorDict] of referenceJsonLive[fieldName].entries()) {
       let otherColSize = 6;
-      let revertElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
+      let revertElement = (<Col sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertFieldArray(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}</Col>);
       if (disabled === 'disabled') { revertElement = (<></>); otherColSize = 7; }
       let valueLiveCurie = comcorDict['curie']; let valueDbCurie = ''; let updatedFlagCurie = '';
       // const url = '/Biblio/?action=display&referenceCurie=' + valueLiveCurie
@@ -1228,8 +1158,10 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   const authorExpand = useSelector(state => state.biblio.authorExpand);
 //   const revertDictFields = 'order, name, first_name, last_name, orcid, first_author, corresponding_author, affiliations'
   const updatableFields = ['author_order', 'name', 'first_name', 'last_name', 'orcid', 'first_author', 'corresponding_author', 'affiliations']
-  let authorOrder = 1;
-  if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) { authorOrder = referenceJsonLive['authors'].length + 1; }
+  // highest existing order + 1, NOT length + 1: with a gap in the orders, length + 1 can
+  // collide with a real author and overwrite its row in the sparse array built below.
+  const highestAuthorOrder = maxAuthorOrder(referenceJsonLive['authors'] || []);
+  const authorOrder = highestAuthorOrder + 1;
   const initializeDict = {'author_order': authorOrder, 'name': '', 'first_name': '', 'last_name': '', orcid: null, first_author: false, corresponding_author: false, affiliations: [], 'author_id': 'new'}
   let disabled = ''
   if (hasPmid && (fieldsPubmed.includes(fieldName))) { disabled = 'disabled'; }
@@ -1248,9 +1180,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
   rowAuthorsElements.push(<AuthorExpandToggler key="authorExpandTogglerComponent" displayOrEditor="editor" />);
   const orderedAuthors = [];
   if ('authors' in referenceJsonLive && referenceJsonLive['authors'] !== null) {
-    let highestAuthorOrder = 0;		// previously was using referenceJsonLive['authors'].length, but there could be a gap in the order from db
     for (const value  of referenceJsonLive['authors'].values()) {
-      if (value['author_order'] > highestAuthorOrder) { highestAuthorOrder = value['author_order']; }
       let index = value['author_order'] - 1;
       if (index < 0) { index = 0 }	// temporary fix for fake authors have an 'order' field value of 0
       orderedAuthors[index] = value; }
@@ -1274,18 +1204,9 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
         </Row>); }
 
     else if (authorExpand === 'detailed') {
-      // Remove warning row because author edit + delete + reorder + create at the same time seems to work, but if it doesn't, bring it back
-      // Warning row for curators not to create and delete authors at the same time.  The UI cannot handle gaps in the author list based on the
-      // db author order from the API.  When a delete is sent to the API, it triggers comparing the author orders to what they should be, but
-      // the newly created author does not have an author_id from the database yet, so it cannot update its order to flatten the order gap.
-      // An API endpoint to flatten author orders would fix it, replace the  if (hasAuthorDeletion) { survivingAuthors  code.
-      // UI is not meant to handle gaps in order, it could be reworked to.
-      // rowAuthorsElements.push(
-      //   <Row key="author editing warning" className="Row-general" xs={2} md={4} lg={6}>
-      //     <Col className="Col-general "></Col>
-      //     <Col className="Col-general " lg={{ span: 10 }}>
-      //       <span style={{color: 'red'}}>Warning: Deleting and Creating an author at the same time will break the UI for the created Authors. Do each of those actions separately and press the Update Biblio Data between them.</span></Col>
-      //   </Row>);
+      // No warning about deleting and creating authors in the same submit any more: the save
+      // path now plans the calls (see src/utils/authorOrdering.js) and closes any order gap
+      // with a single POST /author/reorder once the created authors have real author_ids.
       for (const[index, authorDict] of orderedAuthors.entries()) {
         if (typeof authorDict === 'undefined') { continue; }
         let rowEvenness = (index % 2 === 0) ? 'row-even' : 'row-odd'
@@ -1295,7 +1216,7 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
 
         let otherColSizeName = 7; let otherColSizeNames = 5; let otherColSizeAffiliation = 10;
 //         let buttonsElement = (<Col sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" value={revertDictFields} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}</Col>);
-        let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button>{' '}<Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" onClick={(e) => dispatch(deleteFieldAuthorsReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button>{' '}</Col>);
+        let buttonsElement = (<Col className="Col-editor-buttons" sm="1"><LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Revert ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(biblioRevertAuthorArray(e, initializeDict))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>{' '}<LeftTip tip={DELETE_TOOLTIP}><Button id={`delete ${fieldName} ${index}`} variant="outline-secondary" aria-label={`Delete ${fieldName} row ${index + 1}`} onClick={(e) => dispatch(deleteFieldAuthorsReferenceJson(e))} ><FontAwesomeIcon icon={faTrashAlt} /></Button></LeftTip>{' '}</Col>);
         // if (disabled === 'disabled') { buttonsElement = (<></>); otherColSizeName = 8; otherColSizeNames = 5; otherColSizeOrcid = 3; otherColSizeAffiliation = 10; }
         let disabledName = disabled
         // if first or last name, make name be concatenation of both and disable editing name
@@ -1388,8 +1309,22 @@ const RowEditorAuthors = ({fieldIndex, fieldName, referenceJsonLive, referenceJs
               <Col className="Col-general form-label col-form-label" sm="2" >{fieldName} {index + 1}</Col>
               <ColEditorSimple key={`colElement ${fieldName} ${index} name`} fieldType="input" fieldName={fieldName} colSize={otherColSizeName} value={authorDict['name']} updatedFlag={updatedDict['name']} placeholder="name" disabled={disabledName} fieldKey={`${fieldName} ${index} name`} dispatchAction={changeFieldAuthorsReferenceJson} />
               <Col className="Col-general form-label col-form-label" sm="1" >order </Col>
-              <ColEditorSelectNumeric key={`colElement ${fieldName} ${index} order`} fieldType="select" fieldName={fieldName} colSize="1" value={authorDict['author_order']} updatedFlag={updatedDict['author_order']} placeholder="order" disabled={disabled} fieldKey={`${fieldName} ${index} author_order`} minNumber="1"
- maxNumber={highestAuthorOrder} dispatchAction={changeFieldAuthorsReferenceJson} />
+              {/* Author order is read-only: the API rejects author_order on PATCH and renumbering
+                  goes through POST /author/reorder, which the save thunk issues. Rendered as plain
+                  text rather than a disabled <select>, which would still look like a control.
+                  updatedDict['author_order'] is inert for saved authors -- an existing author's
+                  order is never mutated in the store (the reducer branch and the submit-time
+                  renumber are both gone), so its live and Db orders always match. It can still
+                  flash 'updated' on unsaved new authors: with two or more of them, the Db-index
+                  lookup above (:1243-1245) resolves every author_id === 'new' row to the LAST
+                  new author, so the first one's live order (max+1) is compared against the
+                  second one's Db order (max+2). That mis-resolution is pre-existing and affects
+                  every field of a multi-new-author row, not just this one; it is out of scope
+                  here. It is always assigned, so no "undefined" leaks into className;
+                  it is kept as the ready-made hook for a future reorder UI. The id likewise has no
+                  consumer in the tree (no getElementById, no test, no CSS rule) and is kept purely
+                  as a manual-QA / Playwright selector -- do not wire one up. */}
+              <Col className={`Col-general Col-editor-disabled ${updatedDict['author_order']}`} sm="1" id={`${fieldName} ${index} author_order`} >{authorDict['author_order']}</Col>
               {buttonsElement}
             </Form.Group>);
               // <ColEditorSelect key={`colElement ${fieldName} ${index} source`} fieldType="select" fieldName={fieldName} colSize="4" value={valueLiveSource} updatedFlag={updatedFlagSource} placeholder="source" disabled={disabled} fieldKey={`${fieldName} ${index} source`} enumType="mods" dispatchAction={changeFieldModReferenceReferenceJson} />
@@ -1561,9 +1496,7 @@ const RowEditorRetractionStatus = ({fieldName, referenceJsonLive, referenceJsonD
           </Form.Control>
         </Col>
         <Col sm="1">
-          <Button id={`revert ${fieldName}`} variant="outline-secondary" onClick={(e) => dispatch(biblioRevertField(e))} >
-            <FontAwesomeIcon icon={faUndo} />
-          </Button>
+          <LeftTip tip={REVERT_TOOLTIP}><Button id={`revert ${fieldName}`} variant="outline-secondary" aria-label={`Revert ${fieldName}`} onClick={(e) => dispatch(biblioRevertField(e))} ><FontAwesomeIcon icon={faUndo} /></Button></LeftTip>
         </Col>
       </Form.Group>
     </>
@@ -1675,13 +1608,79 @@ const BiblioEditor = () => {
   return (<Container fluid={wideLayout}>
             <ModalGeneric showGenericModal={biblioEditorModalText !== '' ? true : false} genericModalHeader="Biblio Editor Error"
                           genericModalBody={biblioEditorModalText} onHideAction={setBiblioEditorModalText('')} />
-            <div className="d-flex justify-content-end mb-2">
+            <div className="d-flex justify-content-end align-items-center mb-2">
+              <HelpDocLink url={HELP_DOC_URLS.biblioEditor} title="Open the Biblio Editor help documentation" style={{ marginRight: '12px', verticalAlign: 'baseline' }} />
               <BiblioLayoutPreferenceModal onApplyLayout={setActiveLayout} />
             </div>
             <Form><BiblioSubmitUpdateRouter />{sectionsRender}</Form>
           </Container>);
 } // const BiblioEditor
 
+
+// Inline with the author expand radios rather than a full-width biblio-button row: that idiom
+// means "add another row to this list" (add authors, add affiliations), which this is not.
+// A button rather than a fourth radio, because the radios are view modes that stay selected while
+// this one navigates away -- as a radio it would deselect itself on return and read as broken.
+const ReorderAuthorsButton = () => {
+  const dispatch = useDispatch();
+  const referenceJsonHasChange = useSelector(state => state.biblio.referenceJsonHasChange);
+  const biblioUpdating = useSelector(state => state.biblio.biblioUpdating);
+  const getReferenceCurieFlag = useSelector(state => state.biblio.getReferenceCurieFlag);
+
+  // Three signals, not just the dirty map. UPDATE_BUTTON_BIBLIO empties referenceJsonHasChange on
+  // the FIRST 'update success' of a multi-call save (biblioReducer.js), so between that report and
+  // the end of the save the reference reads clean while referenceJsonLive is still the pre-save
+  // state -- deleteMe rows included, since a delete only flags the row and never removes it.
+  // Seeding the reorder screen there puts a deleted author's id into the ordering payload, which
+  // the API rejects as "not on that reference"; an author created in the same save is missing from
+  // the seed instead and trips the absent-from-payload rule. So also wait for the calls to finish
+  // (biblioUpdating) and for the refetch they trigger to land (getReferenceCurieFlag, true from
+  // save success until BIBLIO_GET_REFERENCE_CURIE clears it).
+  //
+  // Filtering deleteMe rows out of the list instead would be wrong: the payload must name every
+  // ordered author of the reference, so omitting one 422s for the opposite reason. Blocking entry
+  // is the fix, not filtering.
+  //
+  // These clauses stay here rather than in hasUnsavedChanges: BiblioSubmitUpdateButton uses that
+  // helper to paint the Update button purple, and it must not go purple merely because a save is
+  // in flight.
+  const hasUnsavedEdits = hasUnsavedChanges(referenceJsonHasChange);
+  const awaitingSavedData = biblioUpdating > 0 || getReferenceCurieFlag;
+  const blocked = hasUnsavedEdits || awaitingSavedData;
+
+  // a disabled <Button> swallows mouse events in every browser, so the tooltip has to sit on a
+  // wrapper -- otherwise the curator gets a dead control and no reason for it. The message has to
+  // distinguish the two cases, or a grey button after a successful save reads as broken.
+  let blockedTitle = 'Reorder authors';
+  if (hasUnsavedEdits) { blockedTitle = 'Save or revert your changes before reordering authors'; }
+  else if (awaitingSavedData) { blockedTitle = 'Waiting for the save to finish'; }
+
+  return (
+    <span title={blockedTitle}>
+      <Button size="sm" variant="outline-secondary" disabled={blocked}
+        onClick={() => dispatch(openBiblioAuthorReorder())} >reorder</Button>
+    </span>);
+}
+
+// Sibling of ReorderAuthorsButton, and deliberately NOT gated on unsaved edits the way
+// that one is. Reorder has to seed itself from referenceJsonLive and send an ordering
+// payload naming every author, so a half-saved state corrupts it. The person screen
+// reads only author identity and writes author.person_curie server-side, then refetches
+// -- an unsaved citation edit cannot make that wrong, and blocking on it would strand a
+// curator who has one field dirty.
+const PersonAuthorsButton = () => {
+  const history = useHistory();
+  const referenceCurie = useSelector(state => state.biblio.referenceCurie);
+  return (
+    // Margin on the wrapper, not a spacer between the two: ReorderAuthorsButton's span is
+    // its tooltip target and must stay tight to its own button.
+    <span title="Link these authors to people, or create people from them"
+      style={{ marginLeft: '0.75rem' }}>
+      <Button size="sm" variant="outline-secondary"
+        onClick={() => history.push('/Biblio/?action=person&referenceCurie=' + referenceCurie)}
+        >person</Button>
+    </span>);
+}
 
 export const AuthorExpandToggler = ({displayOrEditor}) => {
   const dispatch = useDispatch();
@@ -1721,10 +1720,12 @@ export const AuthorExpandToggler = ({displayOrEditor}) => {
           inline
           checked={detailedChecked}
           type='radio'
-          label='detailed'
+          label={displayOrEditor === 'editor' ? 'edit' : 'detailed'}
           id='biblio-author-expand-toggler-detailed'
           onChange={(e) => dispatch(changeBiblioAuthorExpandToggler(e))}
         />
+        {(displayOrEditor === 'editor') ? <ReorderAuthorsButton /> : null}
+        {(displayOrEditor === 'editor') ? <PersonAuthorsButton /> : null}
       </Col>
     </Row>);
 } // const AuthorExpandToggler

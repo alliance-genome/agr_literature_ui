@@ -4,6 +4,9 @@ import {
   cellSortRank,
   cellPredicate,
   validationState,
+  curatorAssessedMods,
+  isAssessedByMod,
+  isCuratorMixedPositiveTet,
 } from '../groupTets';
 
 describe('sourceLabel', () => {
@@ -31,7 +34,7 @@ describe('groupTetsByTopicAndSource', () => {
       topic_entity_tag_id: 1,
       topic: 'ATP:001',
       negated: false,
-      topic_entity_tag_source: {
+      tag_source: {
         source_method: 'textpresso',
         secondary_data_provider_abbreviation: 'WB',
       },
@@ -40,7 +43,7 @@ describe('groupTetsByTopicAndSource', () => {
       topic_entity_tag_id: 2,
       topic: 'ATP:001',
       negated: true,
-      topic_entity_tag_source: {
+      tag_source: {
         source_method: 'manual',
         secondary_data_provider_abbreviation: 'WB',
       },
@@ -49,7 +52,7 @@ describe('groupTetsByTopicAndSource', () => {
       topic_entity_tag_id: 3,
       topic: 'ATP:002',
       negated: false,
-      topic_entity_tag_source: {
+      tag_source: {
         source_method: 'textpresso',
         secondary_data_provider_abbreviation: 'WB',
       },
@@ -69,7 +72,7 @@ describe('groupTetsByTopicAndSource', () => {
         topic_entity_tag_id: 10,
         topic: 'ATP:001',
         negated: false,
-        topic_entity_tag_source: {
+        tag_source: {
           source_method: 'textpresso',
           secondary_data_provider_abbreviation: 'WB',
         },
@@ -78,7 +81,7 @@ describe('groupTetsByTopicAndSource', () => {
         topic_entity_tag_id: 11,
         topic: 'ATP:001',
         negated: false,
-        topic_entity_tag_source: {
+        tag_source: {
           source_method: 'textpresso',
           secondary_data_provider_abbreviation: 'WB',
         },
@@ -186,17 +189,174 @@ describe('cellPredicate', () => {
 });
 
 describe('validationState', () => {
-  test('treats professional_curator topic validations as validated', () => {
+  test('treats professional_biocurator topic validations as validated', () => {
     expect(
       validationState([
         {
           negated: false,
           entity: null,
-          topic_entity_tag_source: {
-            validation_type: 'professional_curator',
+          tag_source: {
+            validation_type: 'professional_biocurator',
           },
         },
       ])
     ).toBe('positive');
+  });
+
+  test('ignores the retired professional_curator spelling', () => {
+    expect(
+      validationState([
+        {
+          negated: false,
+          entity: null,
+          tag_source: {
+            validation_type: 'professional_curator',
+          },
+        },
+      ])
+    ).toBe('unvalidated');
+  });
+});
+
+describe('per-MOD curator assessment (SCRUM-6256)', () => {
+  const curatorTet = (mod, extra = {}) => ({
+    topic: 'ATP:0001',
+    entity: null,
+    negated: false,
+    tag_source: {
+      source_method: 'abc_literature_system',
+      validation_type: 'professional_biocurator',
+      secondary_data_provider_abbreviation: mod,
+    },
+    ...extra,
+  });
+
+  test('collects the MODs of curator topic-level tets', () => {
+    const tets = [
+      curatorTet('WB'),
+      curatorTet('ZFIN', { negated: true }),
+      // entity-level and non-curator tags are not assessments
+      curatorTet('SGD', { entity: 'WB:Gene1' }),
+      { topic: 'ATP:0001', tag_source: { source_method: 'textpresso',
+        secondary_data_provider_abbreviation: 'FB' } },
+    ];
+    expect([...curatorAssessedMods(tets)].sort()).toEqual(['WB', 'ZFIN']);
+  });
+
+  test('reads MODs from the server by_curator source labels', () => {
+    // After a validation only the aggregate is refreshed; raw tets are stale.
+    const value = {
+      tets: [],
+      validation: {
+        state: 'positive',
+        by_curator: [{
+          name: 'curator_a',
+          negated: false,
+          sources: [{ method: 'abc_literature_system',
+            label: 'abc_literature_system / MGI' }],
+        }],
+      },
+    };
+    expect([...curatorAssessedMods(value)]).toEqual(['MGI']);
+    expect(isAssessedByMod(value, 'mgi')).toBe(true);
+    expect(isAssessedByMod(value, 'WB')).toBe(false);
+  });
+
+  test('another MOD\'s assessment does not count as the curator\'s MOD', () => {
+    expect(isAssessedByMod([curatorTet('ZFIN')], 'WB')).toBe(false);
+    expect(isAssessedByMod([curatorTet('WB')], 'WB')).toBe(true);
+  });
+
+  test('without a MOD, any curator assessment counts', () => {
+    expect(isAssessedByMod([curatorTet('ZFIN')], null)).toBe(true);
+    expect(isAssessedByMod([], null)).toBe(false);
+  });
+});
+
+describe('positive mixed curator tags count as a Y (SCRUM-6784)', () => {
+  // gene expression + gene, from a ZFIN curator
+  const mixedTet = (extra = {}) => ({
+    topic: 'ATP:0000010',
+    entity_type: 'ATP:0000005',
+    entity: 'ZFIN:ZDB-GENE-990415-72',
+    negated: false,
+    // ZFIN's curator-added entities, since SCRUM-6815
+    data_context: 'ATP:0000406',
+    tag_source: {
+      source_method: 'abc_literature_system',
+      validation_type: 'professional_biocurator',
+      secondary_data_provider_abbreviation: 'ZFIN',
+    },
+    ...extra,
+  });
+  const otherModTopicY = {
+    state: 'positive',
+    positives: 1,
+    negatives: 0,
+    by_curator: [{
+      name: 'curator_wb',
+      negated: false,
+      sources: [{ method: 'abc_literature_system',
+        label: 'abc_literature_system / WB' }],
+    }],
+  };
+
+  test('a positive mixed experimental-data curator tag qualifies', () => {
+    expect(isCuratorMixedPositiveTet(mixedTet())).toBe(true);
+    // SCRUM-6815: experimental data itself (FB) and anything under it
+    expect(isCuratorMixedPositiveTet(mixedTet({ data_context: 'ATP:0000405' }))).toBe(true);
+    expect(isCuratorMixedPositiveTet(mixedTet({ data_context: 'ATP:0000409' }))).toBe(true);
+    // unset data context makes no claim and does not block
+    expect(isCuratorMixedPositiveTet(mixedTet({ data_context: null }))).toBe(true);
+  });
+
+  test('negative, pure-entity, other-context and non-curator tags do not', () => {
+    expect(isCuratorMixedPositiveTet(mixedTet({ negated: true }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(mixedTet({ negated: null }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(
+      mixedTet({ topic: 'ATP:0000005' }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(
+      mixedTet({ data_context: 'ATP:0000324' }))).toBe(false);
+    // SCRUM-6815: the assess tag is ATP:0000405 now, which neither the root nor
+    // the deprecated, parentless ATP:0000325 can validate
+    expect(isCuratorMixedPositiveTet(
+      mixedTet({ data_context: 'ATP:0000323' }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(
+      mixedTet({ data_context: 'ATP:0000325' }))).toBe(false);
+    expect(isCuratorMixedPositiveTet(mixedTet({
+      tag_source: { source_method: 'textpresso',
+        secondary_data_provider_abbreviation: 'ZFIN' },
+    }))).toBe(false);
+  });
+
+  test('raw path: a mixed tag alone makes the cell positive', () => {
+    expect(validationState([mixedTet()])).toBe('positive');
+    expect(validationState([mixedTet({ negated: true })])).toBe('unvalidated');
+  });
+
+  test('server path: mixed tags are added to the topic-level aggregate', () => {
+    // the aggregate holds no topic-level assessment for this topic
+    expect(validationState({ tets: [mixedTet()], validation: null }))
+      .toBe('positive');
+    const topicN = { ...otherModTopicY, state: 'negative', positives: 0,
+      negatives: 1 };
+    expect(validationState({ tets: [mixedTet()], validation: topicN }))
+      .toBe('conflict');
+    expect(validationState({ tets: [], validation: null }))
+      .toBe('unvalidated');
+  });
+
+  test('counts for the tag\'s own MOD only', () => {
+    const value = { tets: [mixedTet()], validation: otherModTopicY };
+    expect([...curatorAssessedMods(value)].sort()).toEqual(['WB', 'ZFIN']);
+    expect(isAssessedByMod(value, 'ZFIN')).toBe(true);
+    expect(isAssessedByMod({ tets: [mixedTet()], validation: null }, 'WB'))
+      .toBe(false);
+  });
+
+  test('a pure entity tag does not count for its MOD', () => {
+    const pure = mixedTet({ topic: 'ATP:0000005' });
+    expect(isAssessedByMod({ tets: [pure], validation: null }, 'ZFIN'))
+      .toBe(false);
   });
 });

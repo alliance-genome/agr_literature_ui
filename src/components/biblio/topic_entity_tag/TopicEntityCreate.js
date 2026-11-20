@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import HelpDocLink, { HELP_DOC_URLS } from "../../HelpDocLink";
 import { api } from "../../../api";
 import useAbortableSearch from "../../../hooks/useAbortableSearch";
 import { isSuccess } from "../../../api/httpStatus";
@@ -15,8 +16,11 @@ import {
   setEditTag,
   biblioQueryReferenceCurie,
   fetchTaxonData,
+  fetchDataContextData,
+  changeBiblioActionToggler,
 } from "../../../actions/biblioActions";
 import { checkForExistingTags, setupEventListeners } from "./TopicEntityUtils";
+import { defaultDataContext, hidesDataContextPulldown } from "./dataContextDefaults";
 
 import Container from "react-bootstrap/Container";
 import ModalGeneric from "../ModalGeneric";
@@ -29,6 +33,26 @@ import Button from "react-bootstrap/Button";
 import Spinner from "react-bootstrap/Spinner";
 import { debounce } from 'lodash';
 import Alert from "react-bootstrap/Alert";
+
+// SCRUM-5697. data_context is a hierarchy under ATP:0000323, so the options come
+// from the ontology (fetchDataContextData) rather than a literal list here.
+// The root-level grouping "mentioned data" is not offered; everything under it
+// is. The default comes from defaultDataContext, which is per-MOD
+// (DATA_CONTEXT_DEFAULTS, SCRUM-6815): e.g. WB and ZFIN entity tags take
+// ATP:0000406 and FB tags ATP:0000405 experimental data.
+
+// Labels for data_context terms that are NOT selectable but can still appear on a
+// tag: the root and the groupings. Older tags carry these (WB topic tags were
+// on the root before SCRUM-6815), so the editor has to be able to display them.
+// SCRUM-6815: ATP:0000325 and ATP:0000326 were deprecated (2026-10-30) and have
+// left the ontology tree, so they are no longer offered. The cutover backfilled
+// the stored tags, but a tag created in between could still carry ATP:0000325.
+const dataContextNameMap = {
+  "ATP:0000323": "data context",
+  "ATP:0000324": "mentioned data",
+  "ATP:0000326": "marker data",
+  "ATP:0000325": "experimentally studied data (deprecated)",
+};
 
 const TopicEntityCreate = () => {
   const debugMode = false;
@@ -71,8 +95,10 @@ const TopicEntityCreate = () => {
   const [isVisibleMessageFailureSetCurationStatusToCurated, setIsVisibleMessageFailureSetCurationStatusToCurated] = useState("");
   const [rows, setRows] = useState([
     { topicSelect: "", topicSelectValue: "", entityTypeSelect: "", taxonSelect: "", entityText: "", noteText: "", entityResultList: [],
-      newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false }
+      newDataCheckbox: false, newToDbCheckbox: false, newToFieldCheckbox: false, noDataCheckbox: false, entityAdditionDoneCheckbox: false,
+      dataContextSelect: "" }
   ]);
+  const [dataContextOptions, setDataContextOptions] = useState([]);
   const [topicEntityTags, setTopicEntityTags] = useState([]);
   const inputRefs = useRef([]);
 
@@ -183,6 +209,7 @@ const TopicEntityCreate = () => {
   };
 
   useEffect(() => {
+    fetchDataContextData().then((data) => setDataContextOptions(data));
     getDescendantATPIds("ATP:0000005").then((data) => setGeneDescendants(data));
     getDescendantATPIds("ATP:0000006").then((data) => setAlleleDescendants(data));
   }, []);
@@ -219,6 +246,7 @@ const TopicEntityCreate = () => {
           newDataCheckbox: editRow.data_novelty === 'ATP:0000321' ? true : false,
           newToDbCheckbox: editRow.data_novelty === 'ATP:0000228' ? true : false,
           newToFieldCheckbox: editRow.data_novelty === 'ATP:0000229' ? true : false,
+          dataContextSelect: editRow.data_context || "",
 	  confidence_score: editRow.confidence_score || null,
           confidence_level: editRow.confidence_level || false,
           entityText: editRow.entity_name || editRow.entity || "",
@@ -306,9 +334,15 @@ const TopicEntityCreate = () => {
 	note: row.noteText !== "" ? row.noteText : null,
 	negated: row.noDataCheckbox || false,
 	data_novelty: dataNoveltyAtp,
+	// rowDataContext, not the entityCurie argument: patchEntities and the
+	// topic-only branch of createEntities both pass entityCurie=null and attach
+	// the entity afterwards, so keying off it saved the WB root for a row the
+	// dropdown was showing as experimentally studied. Using the same helper the
+	// <select> renders makes display and payload agree by construction.
+	data_context: rowDataContext(row),
 	confidence_score: null,
 	confidence_level: null,
-	topic_entity_tag_source_id: topicEntitySourceId || null
+	tag_source_id: topicEntitySourceId || null
     }
     if (entityCurie) {
 	json_data['entity_type'] = row.entityTypeSelect;
@@ -341,7 +375,8 @@ const TopicEntityCreate = () => {
       newToDbCheckbox: false,
       newToFieldCheckbox: false,
       noDataCheckbox: false,
-      entityAdditionDoneCheckbox: false
+      entityAdditionDoneCheckbox: false,
+      dataContextSelect: ""
     };
   }
 
@@ -426,6 +461,26 @@ const TopicEntityCreate = () => {
     });
   };
 
+  // SCRUM-5697. The data_context a row will be saved with. Derived rather than
+  // stored in row state for two reasons: an untouched row then follows the
+  // entity field as it is filled in (WB splits on exactly that), and a late
+  // accessLevel from redux cannot leave a stale default behind. Once the curator
+  // picks a term, dataContextSelect holds it and wins.
+  //
+  // entityText is the display-time proxy for "has an entity"; the payload uses
+  // the resolved entity curie instead, since that is what decides the shape of
+  // the tag actually sent.
+  //
+  // SCRUM-6553. When the pulldown is hidden (FB) dataContextSelect is ignored,
+  // not just unreachable: editing a tag preloads its stored data_context into
+  // row state, and FB wants every save to carry the default regardless.
+  const rowDataContext = (row) =>
+    (!hidesDataContextPulldown(accessLevel) && row.dataContextSelect) ||
+    defaultDataContext(accessLevel, Boolean(row.entityText));
+
+  // Declared before initializeUpdateJson uses it. Both are only invoked from
+  // event handlers, so the const is initialised by then either way.
+
   const handleRowChange = (index, field, value) => {
     setRows((prevRows) => {
       const newRows = [...prevRows];
@@ -442,8 +497,16 @@ const TopicEntityCreate = () => {
       if (field === 'topicSelect') {
         currentRow.topicSelect = value || "";
 
-        // auto-populate entity type for ALL rows (cloned or not)
-        if (entityTypeList.includes(value)) {
+        // SCRUM-6645. A cloned row that already carries entities keeps its
+        // entity type and entities when the topic changes (including the
+        // transient clear while the curator retypes the topic), so they do
+        // not have to be re-added. Every other row follows the topic.
+        const keepClonedEntities = currentRow.isCloned && Boolean(currentRow.entityText);
+
+        // auto-populate entity type (cloned rows without entities included)
+        if (keepClonedEntities) {
+          // leave entityTypeSelect as cloned
+        } else if (entityTypeList.includes(value)) {
           currentRow.entityTypeSelect = value;
         } else if (geneDescendants && geneDescendants.includes(value)) {
           currentRow.entityTypeSelect = "ATP:0000005"; // gene
@@ -466,9 +529,11 @@ const TopicEntityCreate = () => {
           currentRow.newToFieldCheckbox = false;
           currentRow.noDataCheckbox = false;
           currentRow.entityAdditionDoneCheckbox = false;
-          currentRow.entityText = "";
-          currentRow.entityResultList = [];
-          currentRow.selectedSpecies = [];
+          if (!keepClonedEntities) {
+            currentRow.entityText = "";
+            currentRow.entityResultList = [];
+            currentRow.selectedSpecies = [];
+          }
         }
       }
 
@@ -564,6 +629,8 @@ const TopicEntityCreate = () => {
     let subPath = "/curation_status/";
     let method = "PATCH";
     let json_data = { 'curation_status': 'ATP:0000239' };
+    // SCRUM-6518: attribute this manual edit to the ABC curator source.
+    if (topicEntitySourceId) { json_data["tag_source_id"] = topicEntitySourceId; }
     if (curation_status_id === 'new') {
       method = "POST";
       json_data["mod_abbreviation"] = accessLevel;
@@ -702,7 +769,7 @@ const TopicEntityCreate = () => {
     } else {
       let entityResult = entityResultList[0];
       let updateJson = initializeUpdateJson(refCurie, row, null, null, dataNoveltyAtpArray[0]);
-      delete updateJson["topic_entity_tag_source_id"];	// initializeUpdateJson populates this but API will fail if sent with PATCH request
+      delete updateJson["tag_source_id"];	// initializeUpdateJson populates this but API will fail if sent with PATCH request
       delete updateJson["reference_curie"];		// initializeUpdateJson populates this but API will fail if sent with PATCH request
       updateJson["entity_id_validation"] = (row.entityTypeSelect) === "" ? null : "alliance";
       updateJson["entity_type"] = (row.entityTypeSelect) === "" ? null : row.entityTypeSelect;
@@ -714,7 +781,8 @@ const TopicEntityCreate = () => {
       if (entityResult) {
         updateJson["entity"] = entityResult.curie;
       }
-      updateJson["updated_by"] = uid;
+      // updated_by is stamped server-side from the authenticated user; the uid
+      // here is the Cognito token sub, which is not a users.id (SCRUM-6459).
       let array = [accessToken, subPath, updateJson, method];
       dispatch(setBiblioUpdatingEntityAdd(1));
       await dispatch(updateButtonBiblioEntityAdd(array, accessLevel));
@@ -786,7 +854,8 @@ const TopicEntityCreate = () => {
       {/* Title and "No TET data" Button */}
       <Row className="form-group row mb-3" style={{ alignItems: "center" }}>
         <Col sm="12" style={{ display: "flex", alignItems: "center" }}>
-          <h3 style={{ marginRight: "10px" }}>Entity and Topic Addition</h3>
+          <h3 style={{ marginRight: "4px" }}>Entity and Topic Addition</h3>
+          <HelpDocLink url={HELP_DOC_URLS.topicEntityTagging} title="Open the Topic and Entity Tagging help documentation" style={{ marginRight: "10px" }} />
 
           {["inProgress", "complete"].map((statusKey) => {
             const workflowTagId = statusKey === "inProgress" ? "ATP:0000276" : "ATP:0000275";
@@ -819,6 +888,15 @@ const TopicEntityCreate = () => {
               </Button>
             );
           })}
+
+          <Button
+            variant="outline-primary"
+            size="sm"
+            style={{ marginLeft: "10px" }}
+            onClick={() => dispatch(changeBiblioActionToggler({ target: { id: 'biblio-toggler-quicktopic' } }, 'quicktopic'))}
+          >
+            Quick Topic Addition
+          </Button>
         </Col>
       </Row>
 
@@ -828,7 +906,7 @@ const TopicEntityCreate = () => {
           topic
         </Col>
         <Col className="div-grey-border" sm="1">
-          checkbox
+          data context / novelty
         </Col>
         <Col className="div-grey-border" sm="1">
           entity type
@@ -846,7 +924,6 @@ const TopicEntityCreate = () => {
           internal notes
         </Col>
         <Col className="div-grey-border" sm="1">
-          button
         </Col>
       </Row>
       {rows.map((row, index) => {
@@ -973,6 +1050,39 @@ const TopicEntityCreate = () => {
                     }}
                   />
                   <span style={{ color: row.newToDbCheckbox || row.newToFieldCheckbox || row.newDataCheckbox ? 'gray' : 'inherit', }} >No Data</span>
+                  {/* SCRUM-6553. FB never sees the pulldown; rowDataContext keeps
+                      sending their default (ATP:0000405 experimental data) regardless. */}
+                  {!hidesDataContextPulldown(accessLevel) && (
+                  <Form.Control
+                    as="select"
+                    size="sm"
+                    id={`dataContextSelect-${index}`}
+                    title="Data context"
+                    style={{ marginTop: '6px', fontSize: '0.75rem' }}
+                    value={rowDataContext(row)}
+                    onChange={(e) => handleRowChange(index, 'dataContextSelect', e.target.value)}
+                  >
+                    {/* The effective term is not always one the dropdown offers.
+                        An older tag can carry a grouping or the root -- WB topic
+                        tags were on ATP:0000323 before SCRUM-6815 -- and only
+                        leaves are selectable. Without a matching <option> the
+                        browser would display the first one instead, and saving
+                        would silently rewrite the stored value. Show it as a
+                        disabled option so it renders truthfully but cannot be
+                        chosen. */}
+                    {rowDataContext(row) &&
+                      !dataContextOptions.some((o) => o.curie === rowDataContext(row)) && (
+                      <option key={rowDataContext(row)} value={rowDataContext(row)} disabled>
+                        {dataContextNameMap[rowDataContext(row)] || rowDataContext(row)}
+                      </option>
+                    )}
+                    {dataContextOptions.map((option) => (
+                      <option key={option.curie} value={option.curie}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </Form.Control>
+                  )}
                 </div>
               </Col>
               <Col sm="1">

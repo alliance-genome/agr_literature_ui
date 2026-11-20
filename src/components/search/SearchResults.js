@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -8,20 +8,33 @@ import {
     setGetReferenceCurieFlag,
     setReferenceCurie
 } from '../../actions/biblioActions';
-import {Modal} from 'react-bootstrap';
+import {Badge, Modal} from 'react-bootstrap';
 import {setSearchError, searchXref} from '../../actions/searchActions';
 import Button from 'react-bootstrap/Button';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFilePdf, faPenSquare, faImage} from "@fortawesome/free-solid-svg-icons";
+import {faFilePdf, faPenSquare, faImage, faPeopleArrows} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../api";
 import { useHistory } from "react-router-dom";
+import { normalizeDisplayPrefs, xrefPrefix, journalInfoFromCitation, stripMarkup } from './settings/searchDisplayPrefs';
+import { xrefUrl } from '../../utils/xrefCurie';
+
+// Highlighted fields that hold a list of values; their matches are separate
+// values, while the matches of a text field are passages from one text.
+const LIST_HIGHLIGHT_FIELDS = ['keywords', 'mesh', 'authors', 'authors.orcid'];
+
+// Repeated fragments are shown once: a MeSH heading is indexed once per
+// qualifier, so "DNA Damage" can come back several times.
+export const joinHighlightFragments = (field, fragments) => {
+  if (!Array.isArray(fragments)) return fragments;
+  return [...new Set(fragments)].join(LIST_HIGHLIGHT_FIELDS.includes(field) ? ', ' : ' &hellip; ');
+};
 
 const MatchingTextBox = (highlight) => {
   return (
     <div className="searchRow-other"> Matching Text:
       <table><tbody>
         {Object.keys(highlight.matches).map((match,index) => (
-          <tr><td class="highlight-label">{match}</td><td class="highlight-value" dangerouslySetInnerHTML={{__html: highlight.matches[match]}} /></tr>
+          <tr><td class="highlight-label">{match}</td><td class="highlight-value" dangerouslySetInnerHTML={{__html: joinHighlightFragments(match, highlight.matches[match])}} /></tr>
         ))}
       </tbody></table>
     </div>
@@ -31,6 +44,14 @@ const MatchingTextBox = (highlight) => {
 const SearchResultItem = ({ reference }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const crossReferenceResults = useSelector(state => state.search.crossReferenceResults);
+  // Display profile (SCRUM-6512): section order/visibility, xref prefix
+  // selection, icons and the author->person link. null (no profile loaded)
+  // normalizes to the defaults, which render the card exactly as before.
+  // Select the raw value and memoize the normalization: normalizing inside the
+  // selector returns a fresh object per call, and useSelector's === comparison
+  // would then re-render every card on any dispatch anywhere in the app.
+  const rawDisplayPrefs = useSelector(state => state.search.searchDisplayPrefs);
+  const displayPrefs = useMemo(() => normalizeDisplayPrefs(rawDisplayPrefs), [rawDisplayPrefs]);
   const dispatch = useDispatch();
 
   const FileDownloadIcon = ({curie}) => {
@@ -54,11 +75,15 @@ const SearchResultItem = ({ reference }) => {
   const TETRedirect = ({ curie }) => {
     const history = useHistory(); // Correct usage of useHistory
     const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+    // Observers are read-only: don't advertise the TET editor (the biblio
+    // router would coerce it to display anyway) (SCRUM-6431). The image
+    // indicator stays: file management is an observer-permitted read view.
+    const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
     const goToTET = () => {
         history.push(`/Biblio/?action=entity&referenceCurie=${curie}`); // Use backticks for template literals
     };
     return (
-         isSignedIn ?  <Button  className="redirect-TET-button"  onClick={goToTET}  >
+         (isSignedIn && !cognitoObserver) ?  <Button  className="redirect-TET-button"  onClick={goToTET}  >
                           <FontAwesomeIcon icon={faPenSquare} id="TET_icon_id" size='2x'/>
                           <p id="TET_text_id">TET</p>
                       </Button>  : null
@@ -76,6 +101,26 @@ const SearchResultItem = ({ reference }) => {
                 onClick={goToFileManagement}>
             <FontAwesomeIcon icon={faImage} size='3x'/>
         </Button>
+    );
+  };
+
+  const PersonRedirect = ({ curie }) => {
+    const history = useHistory();
+    // Gate like the TET button (SCRUM-6431): the biblio router only routes
+    // signed-in non-observers to the person screen — observers are coerced to
+    // the display view and signed-out users get NoAccessAlert, so advertising
+    // the icon to them is misleading (review finding).
+    const isSignedIn = useSelector(state => state.isLogged.isSignedIn);
+    const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
+    const goToPerson = () => {
+        history.push(`/Biblio/?action=person&referenceCurie=${curie}`);
+    };
+    return (
+        (isSignedIn && !cognitoObserver) ?
+        <Button title="Open this paper's authors on the person screen"
+                onClick={goToPerson}>
+            <FontAwesomeIcon icon={faPeopleArrows} size='3x'/>
+        </Button> : null
     );
   };
 
@@ -107,77 +152,190 @@ const SearchResultItem = ({ reference }) => {
 
   const determineUrl = (xref) => {
       // always use the URL privided by mod - through DQM submission
-      // that is stored in cross_reference.pages
-      // check if 'pages' is an array and not empty, occasionally debezium records may out of sync with elasticsearch and some crossreference may in elasticsearch but not in debezium, so check first
-      if (xref.curie in crossReferenceResults && crossReferenceResults[xref.curie] !== undefined && Array.isArray(crossReferenceResults[xref.curie].pages) && crossReferenceResults[xref.curie].pages.length > 0) {
-	  // use the URL from the first item in the 'pages' array
-	  return crossReferenceResults[xref.curie].pages[0].url;
-      }
-      // if 'pages' is not an array or is empty, fall back to the main URL
-      if (xref.curie in crossReferenceResults && crossReferenceResults[xref.curie] !== undefined) {
-          return crossReferenceResults[xref.curie].url;
-      }
-      // if search is out of sync with database, return empty string to prevent UI crashing, but this should not happen on prod or stage
-      return '';
+      // that is stored in cross_reference.pages,
+      // falling back to the main URL when there is no page URL. An xref can be in
+      // elasticsearch but missing from the database lookup (debezium out of sync);
+      // xrefUrl then returns '' to keep the UI from crashing.
+      return xrefUrl(crossReferenceResults[xref.curie]);
   };
 
-  // Show every cross-reference, including dataset xrefs (PDB, GEO, ...), so curators
-  // can see the xref that matched their search.
-  const displayedXrefs = reference.cross_references || [];
+  // Show every cross-reference type by default, including dataset xrefs
+  // (PDB, GEO, ...), so curators can see the xref that matched their search.
+  // The display profile can hide individual prefixes (SCRUM-6512).
+  const displayedXrefs = (reference.cross_references || []).filter(
+    (xref) => !displayPrefs.hiddenXrefPrefixes.includes(xrefPrefix(xref.curie))
+  );
+
+  // The action icons live in a card-level rail beside the sections (not inside
+  // any section): they used to be absolutely positioned in the xref row, which
+  // overlapped the card text once sections could be hidden or reordered
+  // (curator finding). Children ordered to match the old left-to-right cluster:
+  // person, images, TET, PDF. The person icon (its own toggle, separate from
+  // the other action icons) replaced the "Authors :" label link.
+  const icons = (displayPrefs.showIcons || displayPrefs.showPersonIcon) ? (
+    <>
+      {displayPrefs.showPersonIcon && (
+          <PersonRedirect curie={reference.curie}/>
+      )}
+      {displayPrefs.showIcons && (
+          <>
+              {reference.image_count > 0 && (
+                  <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
+              )}
+              <TETRedirect curie={reference.curie}/>
+              <FileDownloadIcon curie = {reference.curie}/>
+          </>
+      )}
+    </>
+  ) : null;
+
+  const showSection = (id) => !displayPrefs.hiddenSections.includes(id);
+
+  // The card's customizable sections, rendered below the title in the
+  // profile's order. Hiding a section that has no content is a no-op.
+  const sectionRenderers = {
+    xrefs: () => (
+      showSection('xrefs') &&
+      <Row key="xrefs"><Col><div className="searchRow-xref">
+          <ul>
+              <li>
+                  <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
+                        onClick={() => {
+                            dispatch(setReferenceCurie(reference.curie));
+                            dispatch(setGetReferenceCurieFlag(true));
+                        }}>
+                      {reference.curie}
+                  </Link>
+              </li>
+              {displayedXrefs.map((xref, i) => (
+                  <li key={i}>
+	<span className="obsolete">
+	    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
+	</span>
+                      <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
+                          {xref.curie}
+                      </a>
+                      {xref.curie.startsWith('PMID:') && (
+                          <div>
+                              <a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`}
+                                 rel="noreferrer noopener" target="_blank">
+                                  EuropePMC
+                              </a>
+                          </div>
+                      )}
+                  </li>
+              ))}
+          </ul>
+      </div></Col></Row>
+    ),
+    authors: () => (
+      // Author names are plain text, reserved for a future link to each
+      // author's own person record; the route to the Biblio person screen is
+      // the person icon in the card's action rail (SCRUM-6512).
+      showSection('authors') &&
+      <div key="authors" className="searchRow-other">Authors : {(reference.authors || []).map((author, i) => (
+          <span key={i}>
+              {i ? ' ' : ''}
+              <span dangerouslySetInnerHTML={{__html: author.name}} />
+          </span>
+      ))}</div>
+    ),
+    pubDate: () => {
+      if (!showSection('pubDate')) return null;
+      // The journal the paper was published in, to the left of the publication
+      // date (SCRUM-1463): lets corpus calls that hinge on the journal (e.g.
+      // eLife's review model) happen from the card without toggling to the
+      // biblio display. Falls back to the journal text in the citation. Both
+      // render as plain text, so markup (<i>species</i>) is stripped.
+      const journal = stripMarkup(reference.resource_title).trim() ||
+        journalInfoFromCitation(reference.citation, reference.title);
+      return (
+        <div key="pubDate" className="searchRow-other">
+          {journal && <span className="searchRow-journal">Journal: {journal}</span>}
+          Publication Date: {reference.date_published}
+        </div>
+      );
+    },
+    abstract: () => (
+      showSection('abstract') &&
+      <div key="abstract" className="searchRow-other">
+        Abstract:
+        <div style={{ cursor: 'pointer' }} onClick={toggleAbstract}>
+          <span dangerouslySetInnerHTML={{ __html: isExpanded ? formatAbstract(reference.abstract) : truncateAbstract(reference.abstract, 500) }} />
+          <span style={{ color: 'blue', textDecoration: 'underline', marginLeft: '10px' }}>
+            {isExpanded ? 'Show Less' : 'Show More'}
+          </span>
+        </div>
+      </div>
+    ),
+    matchingText: () => (
+      // the API sends an empty highlight when nothing matched (no query)
+      showSection('matchingText') && Object.keys(reference.highlight || {}).length > 0
+        ? <MatchingTextBox key="matchingText" matches={reference.highlight}/>
+        : null
+    ),
+  };
+
+  // Genome-scale summary badges (SCRUM-6614). The indexer collapses TET
+  // groups above the large-scale threshold into one summary tag per
+  // (entity type, topic); the API surfaces them on the hit as
+  // large_scale_tags with resolved ATP names. Rendered outside the
+  // customizable sections: saved section orders predate this and it is a
+  // data-completeness signal, not a layout choice.
+  // One badge per (entity type, topic): the indexer mints one summary tag per
+  // sub-group (also split by data_provider, SEA group and owning MOD), so a
+  // paper whose alleles span two providers would otherwise show two allele
+  // badges that read like a bug (review finding). Sum the counts for display.
+  const largeScaleSummaries = (() => {
+    const byKey = new Map();
+    for (const tag of reference.large_scale_tags || []) {
+      const key = `${tag.entity_type || ''}|${tag.topic || ''}`;
+      const entry = byKey.get(key) || {
+        name: tag.entity_type_name || tag.topic_name || tag.entity_type || 'association',
+        count: 0,
+        hasCount: false,
+      };
+      if (tag.entity_count != null) {
+        entry.count += tag.entity_count;
+        entry.hasCount = true;
+      }
+      byKey.set(key, entry);
+    }
+    return [...byKey.values()];
+  })();
+
+  // "gene" -> "genes", "protein complex" -> "protein complexes"; names that
+  // are already plural ("species") pass through.
+  const pluralizeEntityName = (name) =>
+    name.endsWith('s') ? name : (/(sh|ch|x|z)$/.test(name) ? `${name}es` : `${name}s`);
+
+  const largeScaleBadges = largeScaleSummaries.length > 0 && (
+    <div className="searchRow-other">
+      {largeScaleSummaries.map((summary, i) => {
+        const count = summary.hasCount ? `${summary.count.toLocaleString()} ` : '';
+        return (
+          <Badge key={i} variant="info" style={{ marginRight: '6px' }}
+                 title="This paper's associations of this type exceed the display threshold; the full list is in the database and on the Biblio page.">
+            {`${count}${pluralizeEntityName(summary.name)} (large-scale data)`}
+          </Badge>
+        );
+      })}
+    </div>
+  );
 
   return (
     <Row>
       <Col className="Col-general Col-display Col-search" >
-        <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
-          <Row><Col><div className="searchRow-xref">
-              <ul>
-                  <li>
-                      <Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}}
-                            onClick={() => {
-                                dispatch(setReferenceCurie(reference.curie));
-                                dispatch(setGetReferenceCurieFlag(true));
-                            }}>
-                          {reference.curie}
-                      </Link>
-                  </li>
-                  {displayedXrefs.map((xref, i) => (
-                      <li key={i}>
-		<span className="obsolete">
-		    {xref.is_obsolete === 'false' ? '' : 'obsolete '}
-		</span>
-                          <a href={determineUrl(xref)} rel="noreferrer noopener" target="_blank">
-                              {xref.curie}
-                          </a>
-                          {xref.curie.startsWith('PMID:') && (
-                              <div>
-                                  <a href={`https://europepmc.org/article/MED/${xref.curie.split(':')[1]}`}
-                                     rel="noreferrer noopener" target="_blank">
-                                      EuropePMC
-                                  </a>
-                              </div>
-                          )}
-                      </li>
-                  ))}
-              </ul>
-              <TETRedirect curie={reference.curie}/>
-            <FileDownloadIcon curie = {reference.curie}/>
-            {reference.image_count > 0 && (
-                <ImageIndicator curie={reference.curie} imageCount={reference.image_count}/>
+        <div className="d-flex">
+          <div className="search-card-body">
+            <div className="searchRow-title"><Link to={{pathname: "/Biblio", search: "?action=display&referenceCurie=" + reference.curie}} onClick={() => { dispatch(setReferenceCurie(reference.curie)); dispatch(setGetReferenceCurieFlag(true)); }}><span dangerouslySetInnerHTML={{__html: reference.title}} /></Link></div>
+            {largeScaleBadges}
+            {displayPrefs.sectionOrder.map((id) =>
+              sectionRenderers[id] ? sectionRenderers[id]() : null
             )}
-
-          </div></Col></Row>
-          <div className="searchRow-other">Authors : <span dangerouslySetInnerHTML={{__html: reference.authors ? reference.authors.map((author, i) => ((i ? ' ' : '') + author.name)) : ''}} /></div>
-        <div className="searchRow-other">Publication Date: {reference.date_published}</div>
-        <div className="searchRow-other">
-          Abstract:
-          <div style={{ cursor: 'pointer' }} onClick={toggleAbstract}>
-            <span dangerouslySetInnerHTML={{ __html: isExpanded ? formatAbstract(reference.abstract) : truncateAbstract(reference.abstract, 500) }} />
-            <span style={{ color: 'blue', textDecoration: 'underline', marginLeft: '10px' }}>
-              {isExpanded ? 'Show Less' : 'Show More'}
-            </span>
           </div>
+          {icons && <div className="search-card-icons">{icons}</div>}
         </div>
-        {reference.highlight ? <MatchingTextBox matches={reference.highlight}/> : null}
       </Col>
     </Row>
   );

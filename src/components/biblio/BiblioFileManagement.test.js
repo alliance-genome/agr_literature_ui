@@ -2,6 +2,8 @@ import {
   getConvertedFilesMap,
   getConvertedFileClasses,
   getConvertedFileEntries,
+  reffileCompareFn,
+  SUPPLEMENT_UPLOAD_FILE_CLASSES,
 } from './BiblioFileManagement';
 
 let nextId = 1;
@@ -101,21 +103,10 @@ describe('getConvertedFileEntries', () => {
     ]);
   });
 
-  test('does not include raw tei files (tei is no longer displayed)', () => {
-    const merged = makeFile('PMC123_merged', 'converted_merged_main');
-    const tei = makeFile('PMC123', 'tei', 'tei');
-    const mainRow = makeFile('PMC123', 'main', 'pdf');
-    const map = getConvertedFilesMap([mainRow, merged, tei]);
-    expect(getConvertedFileEntries(mainRow, map)).toEqual([
-      { file: merged, label: 'merged' },
-    ]);
-  });
-
-  test('includes tei-derived markdown (_tei suffix) on the main row', () => {
+  test('includes legacy tei-derived markdown (_tei suffix) on the main row', () => {
     const teiMd = makeFile('PMC123_tei', 'converted_merged_main');
-    const tei = makeFile('PMC123', 'tei', 'tei');
     const mainRow = makeFile('PMC123', 'main', 'pdf');
-    const map = getConvertedFilesMap([mainRow, tei, teiMd]);
+    const map = getConvertedFilesMap([mainRow, teiMd]);
     expect(getConvertedFileEntries(mainRow, map)).toEqual([
       { file: teiMd, label: 'merged' },
     ]);
@@ -151,5 +142,59 @@ describe('getConvertedFileEntries', () => {
   test('returns no entries for rows with no converted files', () => {
     const figureRow = makeFile('fig1', 'figure', 'jpg');
     expect(getConvertedFileEntries(figureRow, {})).toEqual([]);
+  });
+});
+
+describe('Office supplements (SCRUM-6589)', () => {
+  test('groups _xlsx / _docx markdown under the source display_name by extension', () => {
+    const xlsxMd = makeFile('table_s1_xlsx', 'converted_merged_supplement');
+    const docxMd = makeFile('table_s1_docx', 'converted_merged_supplement');
+    const map = getConvertedFilesMap([
+      makeFile('table_s1', 'supplement', 'xlsx'),
+      makeFile('table_s1', 'supplement', 'docx'),
+      xlsxMd,
+      docxMd,
+    ]);
+    expect(map).toEqual({
+      table_s1: { office: { xlsx: xlsxMd, docx: docxMd } },
+    });
+  });
+
+  test('each of a same-named PDF, xlsx and docx row shows only its own conversion', () => {
+    const pdfRow = makeFile('table_s1', 'supplement', 'pdf');
+    const xlsxRow = makeFile('table_s1', 'supplement', 'xlsx');
+    const docxRow = makeFile('table_s1', 'supplement', 'docx');
+    const pdfMd = makeFile('table_s1_merged', 'converted_merged_supplement');
+    const xlsxMd = makeFile('table_s1_xlsx', 'converted_merged_supplement');
+    const docxMd = makeFile('table_s1_docx', 'converted_merged_supplement');
+    const map = getConvertedFilesMap([pdfRow, xlsxRow, docxRow, pdfMd, xlsxMd, docxMd]);
+    expect(getConvertedFileEntries(pdfRow, map)).toEqual([{ file: pdfMd, label: 'merged' }]);
+    expect(getConvertedFileEntries(xlsxRow, map)).toEqual([{ file: xlsxMd, label: 'merged' }]);
+    expect(getConvertedFileEntries(docxRow, map)).toEqual([{ file: docxMd, label: 'merged' }]);
+  });
+
+  test('an Office row without a conversion shows nothing, even if a same-named PDF converted', () => {
+    const pdfMd = makeFile('table_s1_merged', 'converted_merged_supplement');
+    const xlsxRow = makeFile('table_s1', 'supplement', 'XLSX');
+    const map = getConvertedFilesMap([makeFile('table_s1', 'supplement', 'pdf'), xlsxRow, pdfMd]);
+    expect(getConvertedFileEntries(xlsxRow, map)).toEqual([]);
+  });
+});
+
+describe('user_submitted files (SCRUM-6817)', () => {
+  test('the supplement upload pulldown offers supplement and user_submitted', () => {
+    expect(SUPPLEMENT_UPLOAD_FILE_CLASSES).toEqual(['supplement', 'user_submitted']);
+  });
+
+  test('user_submitted files sort after supplements and before other classes', () => {
+    const files = [
+      makeFile('fig1', 'figure', 'png'),
+      makeFile('data_b', 'user_submitted', 'xlsx'),
+      makeFile('supp1', 'supplement', 'pdf'),
+      makeFile('data_a', 'user_submitted', 'csv'),
+      makeFile('paper', 'main', 'pdf'),
+    ];
+    expect([...files].sort(reffileCompareFn).map((f) => f.display_name))
+      .toEqual(['paper', 'supp1', 'data_a', 'data_b', 'fig1']);
   });
 });

@@ -135,7 +135,7 @@ export const checkForExistingTags = async (forApiArray, accessLevel, dispatch, u
     let existingTagResponses = [];
     for (const arrayData of forApiArray.values()) {
         try {
-            await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel));
+            await dispatch(updateButtonBiblioEntityAdd(arrayData, accessLevel, { handlesConflict: true }));
         } catch (error) {
             const status = error?.response?.status;
             const detail = error?.response?.data?.detail;

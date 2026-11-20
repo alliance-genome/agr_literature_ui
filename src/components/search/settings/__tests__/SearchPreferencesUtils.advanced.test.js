@@ -82,4 +82,27 @@ describe('SearchPreferences advanced-mode round-trip (SCRUM-6228)', () => {
     const treeAction = dispatched.find((a) => a.type === SEARCH_SET_ADVANCED_TOPIC_QUERY);
     expect(treeAction.payload).toEqual(advancedTree);
   });
+
+  test('a mixed topic + workflow tree round-trips through save/restore (SCRUM-6398)', () => {
+    const mixedTree = {
+      operator: 'AND',
+      excludeNoData: false,
+      children: [
+        { type: 'tet', negate: false, fields: [
+          { field: 'topic', values: [{ value: 'ATP:0000018', label: 'disease model' }] },
+        ] },
+        { type: 'wft', negate: true, fields: [
+          { field: 'workflow_tag_id', values: [{ value: 'ATP:0000162', label: 'file converted to text' }] },
+        ] },
+      ],
+    };
+    const built = buildSearchSettingsState({
+      search: { searchMode: 'advanced', advancedTopicQuery: mixedTree },
+      isLogged: {},
+    });
+    const dispatched = [];
+    applySearchSettingsFromJson({ state: built }, (a) => dispatched.push(a), { runSearch: false });
+    const treeAction = dispatched.find((a) => a.type === SEARCH_SET_ADVANCED_TOPIC_QUERY);
+    expect(treeAction.payload).toEqual(mixedTree);
+  });
 });

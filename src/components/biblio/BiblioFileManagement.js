@@ -42,6 +42,7 @@ const BiblioFileManagement = () => {
   const cognitoMod = useSelector(state => state.isLogged.cognitoMod);
   const testerMod = useSelector(state => state.isLogged.testerMod);
   const cognitoDeveloper = useSelector(state => state.isLogged.cognitoDeveloper);
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   let accessLevel = cognitoMod;
 
   if (testerMod !== 'No') {
@@ -65,10 +66,12 @@ const BiblioFileManagement = () => {
     .filter(item => item.corpus === 'inside_corpus')
     .map(item => item.mod_abbreviation);
 
-  // determine if user can upload files
+  // determine if user can upload files. Observers reach this view for reading
+  // and downloading (their accessLevel is their sponsoring MOD), but are
+  // read-only: no upload, and no add-to-corpus either (SCRUM-6431).
   let canUploadFiles = false;
 
-  if (accessLevel !== 'No') {
+  if (!cognitoObserver && accessLevel !== 'No') {
     if (accessLevel === null || modsInCorpus.includes(accessLevel)) {
       canUploadFiles = true;
     }
@@ -88,11 +91,11 @@ const BiblioFileManagement = () => {
         {canUploadFiles ? (
           <>
             <FileUpload main_or_supp="main" />
-            <FileUpload main_or_supp="supplement" />
+            <FileUpload main_or_supp="supplement" fileClassOptions={SUPPLEMENT_UPLOAD_FILE_CLASSES} />
           </>
-        ) : (
+        ) : !cognitoObserver ? (
           <AddToCorpus accessLevel={accessLevel} referenceCurie={referenceJsonLive.curie} />
-        )}
+        ) : null}
         <OpenAccess />
         <Workflow workflowRefreshTrigger={workflowRefreshTrigger} />
         <RowDivider />
@@ -149,6 +152,8 @@ const AddToCorpus = ({ accessLevel, referenceCurie }) => {
 const Workflow = ({ workflowRefreshTrigger }) => {
   const dispatch = useDispatch();
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
+  // Observers are read-only: no workflow transitions (SCRUM-6431).
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const referenceCurie = referenceJsonLive["curie"]
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
@@ -230,8 +235,8 @@ const Workflow = ({ workflowRefreshTrigger }) => {
   // currently we can only transition from "file upload in progress" to "file unavailable"
   const isMainPDFuploaded = modFileStatus[accessLevel]['atpName'] === 'files uploaded';
   const isDeveloperWithoutTester = cognitoDeveloper === true && testerMod === 'No';
-  const hideFileUnavailableButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
-  const hideInProgressButton = isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file unavailable');
+  const hideFileUnavailableButton = cognitoObserver || isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file upload in progress');
+  const hideInProgressButton = cognitoObserver || isMainPDFuploaded || isDeveloperWithoutTester || (modFileStatus[accessLevel]['atpName'] !== 'file needed' && modFileStatus[accessLevel]['atpName'] !== 'file unavailable');
 
   const handleWorkflowTransition = (newStatusId, alertMessage) => {
     let postData = {
@@ -312,11 +317,15 @@ const Workflow = ({ workflowRefreshTrigger }) => {
 const OpenAccess = () => {
 
   const dispatch = useDispatch();
+  // Observers never get the license editor — read-only span always (SCRUM-6431).
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const [licenseData, setLicenseData] = useState([]);
+  const [resourceLicenses, setResourceLicenses] = useState({ curie: null, list: [] });
   const [newLicense, setNewLicense] = useState('');
   const [showPermissionDetails, setShowPermissionDetails] = useState(false);
   const referenceJsonLive = useSelector(state => state.biblio.referenceJsonLive);
   const referenceCurie = referenceJsonLive["curie"]
+  const resourceCurie = referenceJsonLive["resource_curie"];
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const [alert, setAlert] = useState(false);
   let [showAlert, setShowAlert] = useState(false);
@@ -346,6 +355,33 @@ const OpenAccess = () => {
   const endYear = imagePermission["end_year"] || null;
   const notes = imagePermission["notes"] || null;
   const canDisplayImages = imagePermission["can_display_images"] ? "can display images" : "cannot display images";
+
+  // the license_list restriction only applies when the backend resolved image permission to the
+  // resource's open access license (which includes the publication_year >= license_start_year check)
+  const resourceLicenseApplies = imagePermissionSource === "resource_open_access" &&
+      imagePermission["can_display_images"] === true;
+
+  useEffect(() => {
+    let cancelled = false;
+    // clear first so a list from the previous resource never restricts the current reference
+    setResourceLicenses({ curie: null, list: [] });
+    if (!resourceCurie || !resourceLicenseApplies) return;
+    const fetchResourceLicenseList = async () => {
+      try {
+        const result = await api.get("/resource/" + resourceCurie);
+        if (!cancelled) { setResourceLicenses({ curie: resourceCurie, list: result.data["license_list"] || [] }); }
+      } catch (error) {
+        console.log(error);
+        if (!cancelled) { setResourceLicenses({ curie: resourceCurie, list: [] }); }
+      }
+    }
+    fetchResourceLicenseList().finally();
+    return () => { cancelled = true; };
+  }, [resourceCurie, resourceLicenseApplies]);
+
+  useEffect(() => {
+    setNewLicense('');
+  }, [referenceCurie]);
 
   // Extract values for permission text placeholders
   const getPublicationYear = () => {
@@ -471,18 +507,30 @@ const OpenAccess = () => {
     lastUpdatedBy = referenceJsonLive["copyright_license_last_updated_by"];
   }
 
-  let licenseNames = ['Pick a license', ...licenseData.map(x => x.name)]
+  // restrict the pulldown to the licenses on the reference's resource; the curie check keeps a list
+  // fetched for a previous resource from restricting the current reference
+  const normalizeLicense = (name) => (name || '').trim().toLowerCase();
+  const resourceLicenseSet = new Set(resourceLicenses.list.map(normalizeLicense));
+  let applicableLicenses = licenseData;
+  if (resourceLicenseApplies && resourceLicenses.curie === resourceCurie && resourceLicenseSet.size > 0) {
+    const restricted = licenseData.filter(x => resourceLicenseSet.has(normalizeLicense(x.name)));
+    if (restricted.length > 0) { applicableLicenses = restricted; }
+  }
+  let licenseNames = ['Pick a license', ...applicableLicenses.map(x => x.name)]
   if (licenseName !== '' && lastUpdatedBy !== '') {
     licenseNames.push('No license');
   }
 
   const addLicense = (e) => {
     if (!newLicense || newLicense === 'Pick a license' || newLicense === licenseName) return false;
+    // never submit a selection the current option list no longer offers
+    if (!licenseNames.includes(newLicense)) return false;
     let license = newLicense.replace(' ', '+')
     const url = "/reference/add_license/" + referenceCurie + "/" + license;
     api.post(url).then((res) => {
       setAlert("License Updated!");
       setShowAlert(true);
+      setNewLicense('');
       setTimeout(() => {
         setShowAlert(false);
         dispatch(biblioQueryReferenceCurie(referenceCurie));
@@ -506,7 +554,14 @@ const OpenAccess = () => {
                 :
                 null
             }
-            {licenseToShow !== '' && lastUpdatedBy === '' ?
+            {/* Observers: read-only, and only when the lastUpdatedBy block
+                above hasn't already shown the license (it renders for any
+                curator-licensed reference, so an unconditional span here
+                would double the license text) (SCRUM-6431). */}
+            {cognitoObserver ?
+                (lastUpdatedBy === '' ? <span>{licenseToShow}</span> : null)
+                :
+             (licenseToShow !== '' && lastUpdatedBy === '') ?
                 <span>{licenseToShow}</span>
                 :
                 <>
@@ -604,8 +659,13 @@ const OpenAccess = () => {
   );
 }
 
-const FileUpload = ({main_or_supp}) => {
+// File classes the curator picks from in the supplement upload row (SCRUM-6817).
+// The pulldown starts blank, so nothing uploads until a class is chosen.
+export const SUPPLEMENT_UPLOAD_FILE_CLASSES = ['supplement', 'user_submitted'];
+
+const FileUpload = ({main_or_supp, fileClassOptions}) => {
   const dispatch = useDispatch();
+  const [fileClass, setFileClass] = useState(fileClassOptions ? '' : main_or_supp);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const accessToken = useSelector(state => state.isLogged.accessToken);
   const fileUploadingShowModal = useSelector(state => state.biblio.fileUploadingShowModal);
@@ -663,7 +723,7 @@ const FileUpload = ({main_or_supp}) => {
       fileExtension = file.name.split(".").pop();
     }
 
-    let url = `/reference/referencefile/file_upload/?reference_curie=${referenceCurie}&display_name=${fileName}&file_class=${main_or_supp}&file_publication_status=final&file_extension=${fileExtension}&is_annotation=false`;
+    let url = `/reference/referencefile/file_upload/?reference_curie=${referenceCurie}&display_name=${fileName}&file_class=${fileClass}&file_publication_status=final&file_extension=${fileExtension}&is_annotation=false`;
     if (accessLevel !== null) {
       url += `&mod_abbreviation=${accessLevel}`;
     }
@@ -709,9 +769,9 @@ const FileUpload = ({main_or_supp}) => {
     acceptedFiles.forEach((file) => {
       uploadFile(file);
     });
-  }, [accessLevel, dispatch, accessToken, main_or_supp, referenceCurie]);
+  }, [accessLevel, dispatch, accessToken, fileClass, referenceCurie]);
 
-  const {getRootProps, getInputProps} = useDropzone({onDrop})
+  const {getRootProps, getInputProps} = useDropzone({onDrop, disabled: !fileClass})
 
   return (
       <>
@@ -720,14 +780,29 @@ const FileUpload = ({main_or_supp}) => {
                       genericModalBody={fileUploadingModalText.replaceAll(". ", ".<br/>")}
                       onHideAction={setFileUploadingShowModal(false)} />
         <Row key={main_or_supp} >
-          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>{main_or_supp} file</Col>
+          <Col className="Col-general Col-display Col-display-left" lg={{ span: 2 }}>
+            {fileClassOptions ? (
+              <Form.Control
+                as="select"
+                size="sm"
+                aria-label="file type"
+                value={fileClass}
+                onChange={(event) => setFileClass(event.target.value)}
+              >
+                <option value=""></option>
+                {fileClassOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              </Form.Control>
+            ) : `${main_or_supp} file`}
+          </Col>
           <Col className="Col-general Col-display Col-display-right" lg={{ span: 10 }} style={{ display: 'flex', alignItems: 'center'}}>
             { (() => {
               if (accessLevel !== 'No') {
                 return (
                   <div className="dropzone" {...getRootProps()} >
                     <input {...getInputProps()} />
-                    <p>Drag and drop {main_or_supp} file here, or click to select files</p>
+                    <p>{fileClass
+                      ? `Drag and drop ${fileClass} file here, or click to select files`
+                      : 'Select a file type to upload files'}</p>
                   </div>
                 ) }
               else { return ( <div>You must be in a Cognito curator group to upload files in production</div>) } } )() }
@@ -788,10 +863,10 @@ export const BiblioCitationDisplay = ({ extraLabelContent }) => {
 // }
 
 export const reffileCompareFn = (a, b) => {
-  // Sort order: main first, then supplement, then others (figure, etc.) at the end
-  const fileClassOrder = { 'main': 0, 'supplement': 1 };
-  const orderA = fileClassOrder[a.file_class] ?? 2;
-  const orderB = fileClassOrder[b.file_class] ?? 2;
+  // Sort order: main first, then supplement, then user_submitted, then others (figure, etc.) at the end
+  const fileClassOrder = { 'main': 0, 'supplement': 1, 'user_submitted': 2 };
+  const orderA = fileClassOrder[a.file_class] ?? 3;
+  const orderB = fileClassOrder[b.file_class] ?? 3;
 
   if (orderA !== orderB) {
     return orderA - orderB;
@@ -820,13 +895,12 @@ const CONVERTED_FILE_CLASSES = {
   ]
 };
 
-// All converted file classes (for filtering). 'tei' stays listed so tei files
-// are kept out of the file table, even though tei links are no longer rendered
-// in the Converted Files column.
+// All converted file classes (for filtering). Raw tei files no longer exist —
+// deleted from the DB and S3 (SCRUM-5954); only their derived markdown
+// (_tei-suffixed converted rows) remains.
 const ALL_CONVERTED_FILE_CLASSES = [
   ...CONVERTED_FILE_CLASSES.main,
-  ...CONVERTED_FILE_CLASSES.supplement,
-  'tei'
+  ...CONVERTED_FILE_CLASSES.supplement
 ];
 
 // Display labels for converted file types
@@ -847,12 +921,40 @@ const CONVERTED_FILE_LABELS = {
 // these yields the source display_name used as the grouping key.
 const METHOD_SUFFIXES = ['_grobid', '_docling', '_marker', '_merged', '_nxml', '_tei'];
 
-// Create a mapping of base display_name to converted files (markdown and TEI)
+// Office supplements (xlsx / docx) convert in-process to Markdown named
+// "{display_name}_{extension}" (Table_S1.xlsx -> Table_S1_xlsx), so the suffix
+// also names the source's extension (SCRUM-6589). A supplement PDF, an xlsx and
+// a docx can share a display_name; each row shows only its own conversion.
+const OFFICE_EXTENSIONS = ['xlsx', 'xlsm', 'docx', 'docm'];
+const OFFICE_SUFFIXES = OFFICE_EXTENSIONS.map((ext) => `_${ext}`);
+
+const getOfficeSuffix = (displayName) =>
+  OFFICE_SUFFIXES.find((suffix) => displayName.endsWith(suffix)) || null;
+
+const isOfficeSource = (referenceFile) =>
+  referenceFile.file_class === 'supplement' &&
+  OFFICE_EXTENSIONS.includes((referenceFile.file_extension || '').toLowerCase());
+
+// Create a mapping of base display_name to converted markdown files.
 // Converted files have names like "PMC123_grobid" but we need to map to "PMC123"
+// Office-derived markdown is kept apart under map[base].office[extension], so it
+// never collides with the PDFX output of a same-named supplement PDF.
 export const getConvertedFilesMap = (referenceFiles) => {
   const map = {};
   referenceFiles.forEach(file => {
     if (ALL_CONVERTED_FILE_CLASSES.includes(file.file_class)) {
+      const officeSuffix = getOfficeSuffix(file.display_name);
+      if (officeSuffix) {
+        const baseDisplayName = file.display_name.slice(0, -officeSuffix.length);
+        if (!map[baseDisplayName]) {
+          map[baseDisplayName] = {};
+        }
+        if (!map[baseDisplayName].office) {
+          map[baseDisplayName].office = {};
+        }
+        map[baseDisplayName].office[officeSuffix.slice(1)] = file;
+        return;
+      }
       // Strip method suffix to get base display_name
       let baseDisplayName = file.display_name;
       for (const suffix of METHOD_SUFFIXES) {
@@ -887,14 +989,18 @@ const getMethodSuffix = (displayName) =>
   METHOD_SUFFIXES.find((suffix) => displayName.endsWith(suffix)) || null;
 
 // Ordered {file, label} entries for the Converted Files column of a row,
-// in merged, grobid, docling, marker order. Raw tei files are never included,
-// but tei-derived markdown (_tei suffix) is, on main/supplement rows.
+// in merged, grobid, docling, marker order. Legacy tei-derived markdown
+// (_tei suffix) is included on main/supplement rows.
 // A main PDF and an nXML file often share the same display_name, so the class
 // lists alone would show the same conversion on both rows; the _nxml suffix
 // pins nXML-derived markdown to its nXML source row and keeps it off the
 // main/supplement rows (and vice versa for the other suffixes).
 export const getConvertedFileEntries = (referenceFile, convertedFilesMap) => {
   const convertedFiles = convertedFilesMap[referenceFile.display_name] || {};
+  if (isOfficeSource(referenceFile)) {
+    const officeMd = (convertedFiles.office || {})[referenceFile.file_extension.toLowerCase()];
+    return officeMd ? [{ file: officeMd, label: CONVERTED_FILE_LABELS[officeMd.file_class] }] : [];
+  }
   const wantNxmlDerived = referenceFile.file_class === 'nXML';
   return getConvertedFileClasses(referenceFile.file_class)
     .filter((fileClass) => convertedFiles[fileClass])
@@ -914,6 +1020,10 @@ const FileEditor = ({ onFileStatusChange }) => {
 
   const dispatch = useDispatch();
   const accessToken = useSelector(state => state.isLogged.accessToken);
+  // hasAccess (below) is a READ/download predicate; observers satisfy it for
+  // open-access, figure and own-MOD/PMC files but must never get the edit
+  // controls (pdf_type / publication status PATCH, delete) (SCRUM-6431).
+  const cognitoObserver = useSelector(state => state.isLogged.cognitoObserver);
   const loadingFileNames = useSelector(state => state.biblio.loadingFileNames);
   const referenceCurie = useSelector(state => state.biblio.referenceCurie);
   const fileUploadingShowSuccess = useSelector(state => state.biblio.fileUploadingShowSuccess);
@@ -1061,6 +1171,9 @@ const FileEditor = ({ onFileStatusChange }) => {
   };
 
   const getDisplayRowsFromReferenceFiles = (referenceFilesArray, hasAccess) => {
+    // Read (download links) and write (edit/delete controls) separate here:
+    // hasAccess keeps the downloads, canEdit gates the mutations.
+    const canEdit = hasAccess && !cognitoObserver;
     return referenceFilesArray.map((referenceFile, index) => {
       const source = referenceFile.referencefile_mods.map(
         (mod) => mod.mod_abbreviation === null ? "PMC" : mod.mod_abbreviation
@@ -1103,7 +1216,7 @@ const FileEditor = ({ onFileStatusChange }) => {
           <Col className="Col-general Col-display" lg={{ span: 1 }}>
             <Form.Control
               as="select"
-              disabled={!hasAccess}
+              disabled={!canEdit}
               value={referenceFile.pdf_type ?? ''}
               onChange={(event) => {
                 const newValue = event.target.value === "" ? null : event.target.value;
@@ -1124,7 +1237,7 @@ const FileEditor = ({ onFileStatusChange }) => {
           <Col className="Col-general Col-display" lg={{ span: 1 }}>
             <Form.Control
               as="select"
-              disabled={!hasAccess}
+              disabled={!canEdit}
               value={referenceFile.file_publication_status}
               onChange={(event) => {
                 const newValue = event.target.value;
@@ -1140,7 +1253,7 @@ const FileEditor = ({ onFileStatusChange }) => {
             </Form.Control>
           </Col>
           <Col className="Col-general Col-display-right" lg={{ span: 1 }}>
-            <Button variant="outline-dark" disabled={!hasAccess} onClick={() => deleteReferencefile(referenceFile.referencefile_id)}>
+            <Button variant="outline-dark" disabled={!canEdit} onClick={() => deleteReferencefile(referenceFile.referencefile_id)}>
               <FontAwesomeIcon icon={faTrash} />
             </Button>
           </Col>
@@ -1150,7 +1263,7 @@ const FileEditor = ({ onFileStatusChange }) => {
   };
           
   let rowReferencefileElements = [];
-  // Filter out all converted files (TEI and markdown) from the main display
+  // Filter out all converted markdown files from the main display
   const canDisplayImages = referenceJsonLive["effective_image_permission"]?.["can_display_images"] === true;
   const hasReferenceFileAccess = (referenceFile) => (
     referenceJsonLive["copyright_license_open_access"] === true ||

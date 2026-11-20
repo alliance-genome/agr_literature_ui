@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -40,7 +40,7 @@ const BreadCrumbs = () => {
     const advancedTopicQuery = useSelector(state => state.search.advancedTopicQuery);
     const dispatch = useDispatch();
 
-    // The advanced Topic query is "active" when the builder mode is on and the tree
+    // The advanced query is "active" when the builder mode is on and the tree
     // compiles to a non-empty query. Show it as a removable breadcrumb whose tooltip
     // is the same SQL-like preview the builder shows (SCRUM-6228).
     const advancedCompiled = searchMode === 'advanced'
@@ -50,6 +50,35 @@ const BreadCrumbs = () => {
     const advancedPreview = advancedActive
         ? `PAPER WHERE ${describeCompiledQuery(advancedCompiled, buildValueLabeler(advancedTopicQuery))}`
         : '';
+    // Name the breadcrumb for what the query actually holds: topic conditions,
+    // workflow conditions, or a mix (SCRUM-6398).
+    const advancedLabel = (() => {
+        if (!advancedActive) { return ''; }
+        const kinds = new Set();
+        const walk = (n) => {
+            if (!n) { return; }
+            if (n.type === 'tet') { kinds.add('topic'); return; }
+            if (n.type === 'wft') { kinds.add('workflow'); return; }
+            (n.children || []).forEach(walk);
+        };
+        walk(advancedCompiled);
+        const what = kinds.size === 2 ? 'topic & workflow'
+            : kinds.has('workflow') ? 'workflow' : 'topic';
+        return `Advanced ${what} query (active)`;
+    })();
+
+    // Remember bucket names as they are seen. An excluded value drops out of the
+    // current aggregation, so without this an excluded resource would show as its
+    // bare resource_id rather than the journal title.
+    const seenBucketNamesRef = useRef({});
+    Object.entries(searchFacets || {}).forEach(([facet, agg]) => {
+        (agg?.buckets || []).forEach(b => {
+            if (b?.name) {
+                seenBucketNamesRef.current[facet] = seenBucketNamesRef.current[facet] || {};
+                seenBucketNamesRef.current[facet][b.key] = b.name;
+            }
+        });
+    });
 
     const getDisplayName = (facet, value) => {
         const valueRename = RENAME_FACET_VALUES[facet]?.[value];
@@ -68,6 +97,8 @@ const BreadCrumbs = () => {
         // unavailable when the value is excluded (its bucket drops out of the
         // current aggregation). Translate the ECO/ATP curie to its short label.
         if (facet === 'source_evidence_assertions' && value) return evidenceAssertionName(value);
+        const seenName = seenBucketNamesRef.current[facet]?.[value];
+        if (seenName) return seenName;
         return value;
     };
 
@@ -77,8 +108,12 @@ const BreadCrumbs = () => {
 	// 2. retraction_status.keyword (Bibliographic Data's retraction status)
 	// 3. Any Alliance Metadata facets
 	// 4. The boolean Images facets, whose values (Yes/No) are meaningless without the facet name
+	// 5. The Large-scale data facet, boolean like the Images ones (SCRUM-6614)
+	// 6. The Journal / Resource facet, so a journal title reads as a journal filter (SCRUM-1463)
+	// 7. The Data Context facet, whose values (e.g. "experimentally studied") need the facet name
        return facet === 'language.keyword' || facet === 'retraction_status.keyword' || facet.startsWith('mods_') ||
-           facet === 'can_display_image' || facet === 'has_image';
+           facet === 'can_display_image' || facet === 'has_image' || facet === 'large_scale_tag' ||
+           facet === 'resource_id.keyword' || facet === 'data_context';
     };
     
     const getFacetLabel = (facet, value) => {
@@ -246,7 +281,7 @@ const BreadCrumbs = () => {
                         {advancedActive &&
                             <BreadcrumbItem
                                 key="advanced_topic_query_breadcrumb"
-                                label="Advanced topic query (active)"
+                                label={advancedLabel}
                                 variant="outline-primary"
                                 tooltip={advancedPreview}
                                 onRemove={handleRemoveAdvancedQuery}

@@ -92,10 +92,12 @@ export const VALIDATION_BY_PROFESSIONAL_BIOCURATOR_OPTIONS = [
 export const TET_FIELD_DEFS = [
   { key: 'topic', label: 'Topic', facetKey: 'topics' },
   { key: 'entity_type', label: 'Entity type', facetKey: null, options: ENTITY_TYPE_OPTIONS },
+  { key: 'entity', label: 'Entity', facetKey: null },
   { key: 'source_method', label: 'Source method', facetKey: 'source_methods' },
   { key: 'source_evidence_assertion', label: 'Source evidence assertion', facetKey: 'source_evidence_assertions' },
   { key: 'confidence_level', label: 'Confidence level', facetKey: 'confidence_levels' },
   { key: 'data_novelty', label: 'Data novelty', facetKey: 'data_novelty' },
+  { key: 'data_context', label: 'Data context', facetKey: 'data_context' },
   {
     key: 'validation_by_professional_biocurator',
     label: 'Validation (biocurator)',
@@ -111,6 +113,29 @@ export const FIELD_DEF_BY_KEY = TET_FIELD_DEFS.reduce((acc, def) => {
   acc[def.key] = def;
   return acc;
 }, {});
+
+// Workflow-tag conditions in the same tree (SCRUM-6398). A Workflow card is a
+// leaf of type 'wft' carrying a single field row (workflow_tag_id) whose chip
+// values are ATP workflow-tag curies; values OR within the card, cards combine
+// with the tree operator alongside Topic Tag cards. The value dropdown is
+// grouped by the same workflow categories as the facet panel — each key is a
+// search aggregation whose buckets seed that group's options. BACKEND CONTRACT
+// (build_tet_advanced_query): a {type:'wft', match:{workflow_tag_id:[...]}}
+// leaf compiles to a nested workflow_tags query, MOD-scoped like the flat
+// workflow facet path.
+// Alphabetical by label, as in the facet panel (SCRUM-6490).
+export const WFT_CATEGORY_DEFS = [
+  { key: 'abstract_classification', label: 'Abstract classification' },
+  { key: 'author_workflow', label: 'Author' },
+  { key: 'community_curation', label: 'Community curation' },
+  { key: 'curation_classification', label: 'Curation classification' },
+  { key: 'email_extraction', label: 'Email extraction' },
+  { key: 'entity_extraction', label: 'Entity extraction' },
+  { key: 'file_workflow', label: 'File workflow' },
+  { key: 'first_pass_curation', label: 'First pass curation' },
+  { key: 'manual_indexing', label: 'Manual indexing' },
+  { key: 'reference_classification', label: 'Reference classification' },
+];
 
 export const isRangeField = (key) => !!(FIELD_DEF_BY_KEY[key] && FIELD_DEF_BY_KEY[key].range);
 
@@ -132,6 +157,13 @@ export const createFieldRow = (field = 'topic') => ({
   max: 1,
 });
 export const createLeaf = () => ({ type: 'tet', negate: false, fields: [createFieldRow()] });
+// A Workflow condition reuses the leaf/fields row plumbing with a single fixed
+// field, so chips, compile, dedupe and save/restore all work unchanged (SCRUM-6398).
+export const createWftLeaf = () => ({
+  type: 'wft',
+  negate: false,
+  fields: [{ field: 'workflow_tag_id', values: [] }],
+});
 export const createGroup = () => ({ operator: 'OR', children: [createLeaf()] });
 // The Tag-card UI keeps a FLAT tree: leaves (one per Tag) directly under the root,
 // combined with the top-level operator. The compiler still supports nested groups,
@@ -152,7 +184,37 @@ export const createEmptyTree = () => ({
   children: [createLeaf()],
 });
 
-export const isLeaf = (node) => !!node && node.type === 'tet';
+export const isLeaf = (node) => !!node && (node.type === 'tet' || node.type === 'wft');
+export const isWftLeaf = (node) => !!node && node.type === 'wft';
+
+// Collapse duplicate field rows within a leaf so the one-row-per-field invariant
+// the flat Tag builder relies on holds for restored queries too. A query saved
+// before that invariant (or a nested tree) can carry the same field twice; the
+// builder would then render two rows of the same type, and Add-field could be
+// disabled while types remain unused. Later duplicates merge their chip values
+// into the first row (values on one field are OR, so nothing is lost); range
+// fields keep the first row's min/max. First-occurrence order is preserved.
+const dedupeLeafFields = (leaf) => {
+  if (!leaf || !Array.isArray(leaf.fields)) return leaf;
+  const byField = new Map();
+  leaf.fields.forEach((row) => {
+    if (!row || !row.field) return;
+    const existing = byField.get(row.field);
+    if (!existing) {
+      byField.set(row.field, { ...row });
+      return;
+    }
+    const valueKey = (v) => (v && typeof v === 'object' ? v.value : v);
+    const seen = new Set((existing.values || []).map(valueKey));
+    const merged = [...(existing.values || [])];
+    (row.values || []).forEach((v) => {
+      const k = valueKey(v);
+      if (k && !seen.has(k)) { seen.add(k); merged.push(v); }
+    });
+    existing.values = merged;
+  });
+  return { ...leaf, fields: Array.from(byField.values()) };
+};
 
 // Collect every leaf in a (possibly nested) tree into a flat { operator, children:[leaf] }
 // so the Tag-card builder can display a legacy/nested saved query without crashing.
@@ -170,8 +232,30 @@ export const normalizeToFlatTree = (tree) => {
     operator: String(tree.operator || 'AND').toUpperCase() === 'OR' ? 'OR' : 'AND',
     // Preserve an explicit excludeNoData; default it off for trees that predate the flag.
     excludeNoData: tree.excludeNoData === true,
-    children: leaves.length > 0 ? leaves : [createLeaf()],
+    children: leaves.length > 0 ? leaves.map(dedupeLeafFields) : [createLeaf()],
   };
+};
+
+// True when a (possibly restored) tree must be run through normalizeToFlatTree
+// before the flat Tag builder can safely display it. Three cases:
+//   - it still contains nested groups (the flat UI can't render them),
+//   - it predates the excludeNoData flag (undefined reads as an unset default),
+//   - it carries duplicate field rows within a Tag — a search saved by the flat
+//     builder AFTER excludeNoData landed but BEFORE the one-row-per-field
+//     invariant. Those trees are all-leaf with excludeNoData defined, so the first
+//     two checks miss them; without this the duplicates survive and Add-field can
+//     be disabled while field types remain unused (SCRUM-6333).
+// Idempotent with normalizeToFlatTree: a normalized tree returns false, so the
+// builder's one-shot seeding effect can't loop.
+export const needsFlatNormalization = (tree) => {
+  if (!tree) return false;
+  const children = tree.children || [];
+  if (children.some((c) => !isLeaf(c))) return true;
+  if (tree.excludeNoData === undefined) return true;
+  return children.some((c) => {
+    const fieldKeys = (c.fields || []).map((f) => f && f.field).filter(Boolean);
+    return new Set(fieldKeys).size !== fieldKeys.length;
+  });
 };
 
 // Split a free-text value into a trimmed, de-duplicated, non-empty list.
@@ -219,22 +303,27 @@ const compileLeafMatch = (leaf) => {
 // away; a node with a single effective child returns that child directly;
 // returns null when the whole tree is empty (caller then omits tet_advanced_query).
 //
-// When the tree's excludeNoData flag is on, each positive (non-excluded) leaf that
-// does not already pin has_data gets has_data = yes injected, so results only match
-// tags that have data — the same default the facet search applies as "exclude
-// negative". The flag lives on the tree root; `exclude` propagates it to leaves.
-// Injection is skipped for excluded (negated) leaves and for any leaf that already
-// carries an explicit Has data field, so those override the default (SCRUM-6228).
+// When the tree's excludeNoData flag is on, each leaf that does not already pin
+// has_data gets has_data = yes injected, so only tags that have data count — the
+// same default the facet search applies as "exclude negative". This applies to
+// excluded (negated) leaves too: NOT (topic AND has_data = yes) drops a paper
+// only when a DATA-carrying tag matches, while a paper whose only matching tag
+// is no-data is kept, consistent with "no-data tags don't count" (SCRUM-6400;
+// previously negated leaves were skipped and the clause silently vanished).
+// The flag lives on the tree root; `exclude` propagates it to leaves. A leaf
+// carrying an explicit Has data field overrides the default (SCRUM-6228).
 export const compileAdvancedQuery = (node, exclude) => {
   if (!node) return null;
   const excludeNoData = exclude === undefined ? node.excludeNoData === true : exclude;
   if (isLeaf(node)) {
     const match = compileLeafMatch(node);
     if (!match) return null;
-    if (excludeNoData && !node.negate && !('has_data' in match)) {
+    // has_data is an attribute of topic-entity tags only; a Workflow condition
+    // (wft leaf) has no polarity, so the excludeNoData default never touches it.
+    if (excludeNoData && !isWftLeaf(node) && !('has_data' in match)) {
       match.has_data = ['yes'];
     }
-    return { type: 'tet', negate: !!node.negate, match };
+    return { type: node.type, negate: !!node.negate, match };
   }
   const children = (node.children || [])
     .map((child) => compileAdvancedQuery(child, excludeNoData))
@@ -275,15 +364,17 @@ export const buildValueLabeler = (tree) => {
 // distinct fields on one tag as `AND`, tags/groups per the node operator.
 export const describeCompiledQuery = (node, labelFor = (_f, v) => v) => {
   if (!node) return '';
-  if (node.type === 'tet') {
+  if (node.type === 'tet' || node.type === 'wft') {
     const parts = Object.entries(node.match).map(([field, vals]) => {
       if (field === 'confidence_score') {
         return `confidence_score in [${vals[0]}, ${vals[1]}]`;
       }
+      // The wft leaf's only field reads better as "workflow_tag" than the raw key.
+      const shownField = field === 'workflow_tag_id' ? 'workflow_tag' : field;
       const shown = (vals || []).map((v) => `"${labelFor(field, v)}"`);
       return shown.length === 1
-        ? `${field} = ${shown[0]}`
-        : `${field} in (${shown.join(', ')})`;
+        ? `${shownField} = ${shown[0]}`
+        : `${shownField} in (${shown.join(', ')})`;
     });
     const body = parts.join(' AND ');
     return node.negate ? `NOT (${body})` : `(${body})`;
@@ -300,6 +391,7 @@ const GRID_POSITIVE_KEYS = {
   source_method: 'source_methods',
   source_evidence_assertion: 'source_evidence_assertions',
   data_novelty: 'data_novelty',
+  data_context: 'data_context',
   entity_type: 'entity_types',
   entity: 'entities',
 };
@@ -307,6 +399,7 @@ const GRID_NEGATED_KEYS = {
   confidence_level: 'negated_confidence_levels',
   source_method: 'negated_source_methods',
   source_evidence_assertion: 'negated_source_evidence_assertions',
+  data_context: 'negated_data_context',
 };
 
 // Best-effort FLAT grid filter from a COMPILED advanced tree (SCRUM-6228). The
@@ -330,6 +423,9 @@ export const flattenAdvancedForGrid = (compiled) => {
   let scoreMax = null;
   const walk = (node) => {
     if (!node) return;
+    // Workflow conditions constrain the search but have no TET-grid equivalent;
+    // skip them like the other unmapped sub-facets (SCRUM-6398).
+    if (node.type === 'wft') return;
     if (node.type === 'tet') {
       const keys = node.negate ? GRID_NEGATED_KEYS : GRID_POSITIVE_KEYS;
       Object.entries(node.match || {}).forEach(([field, values]) => {

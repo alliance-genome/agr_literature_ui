@@ -13,10 +13,9 @@ import Tab from 'react-bootstrap/Tab';
 import { api } from '../api';
 import LaboratoryEditor from './laboratory/LaboratoryEditor';
 import LaboratoryDisplay from './laboratory/LaboratoryDisplay';
-import LaboratoryWbDisplay from './laboratory/LaboratoryWbDisplay';
 
-const VALID_TABS = ['editor', 'ccdisplay', 'wbdisplay'];
-const DEFAULT_TAB = 'editor';
+const VALID_TABS = ['display', 'editor'];
+const DEFAULT_TAB = 'display';
 
 const LAB_LOOKUP_OPTIONS = [
   { value: 'name', label: 'Lab Name' },
@@ -116,7 +115,7 @@ const Laboratory = () => {
       if (Array.isArray(res.data)) {
         if (res.data.length === 1) record = res.data[0];
         else if (res.data.length > 1) multi = res.data;
-      } else if (res.data && typeof res.data === 'object' && (res.data.curie || res.data.laboratory_id)) {
+      } else if (res.data && typeof res.data === 'object' && res.data.curie) {
         record = res.data;
       }
 
@@ -278,16 +277,18 @@ const Laboratory = () => {
               id="laboratory-view-tabs"
               className="mb-3"
             >
+              <Tab eventKey="display" title="Display">
+                {/* Keyed by curie like the editor: Display holds the record in
+                    state and refreshes it on mount, so a new lookup must remount
+                    rather than keep the previous laboratory's data. */}
+                {activeTab === 'display' && (
+                  <LaboratoryDisplay key={laboratoryData.curie} laboratory={laboratoryData} />
+                )}
+              </Tab>
               <Tab eventKey="editor" title="Editor">
                 {activeTab === 'editor' && (
                   <LaboratoryEditor key={laboratoryData.curie} laboratory={laboratoryData} />
                 )}
-              </Tab>
-              <Tab eventKey="ccdisplay" title="CC Display">
-                {activeTab === 'ccdisplay' && <LaboratoryDisplay laboratory={laboratoryData} />}
-              </Tab>
-              <Tab eventKey="wbdisplay" title="WB display">
-                {activeTab === 'wbdisplay' && <LaboratoryWbDisplay laboratory={laboratoryData} />}
               </Tab>
             </Tabs>
           )}

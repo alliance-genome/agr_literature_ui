@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import HelpDocLink, { HELP_DOC_URLS } from './HelpDocLink';
 import { Spinner, Tabs, Tab, Button, ButtonGroup } from 'react-bootstrap';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -9,11 +10,13 @@ import WorkflowDiagram from './WorkflowDiagram';
 
 import { DownloadAllColumnsButton, DownloadMultiHeaderButton } from './biblio/topic_entity_tag/TopicEntityTable.js';
 
-import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict, setQcreportObsoleteEntities, setQcreportRecactedPapers, setQcreportDuplicateOrcids } from '../actions/reportsActions';
+import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict } from '../actions/reportsActions';
 import { fetchMLModelsIfNeeded } from '../actions/mlModelsActions';
 import ModelsTable from './reports/ModelsTable';
+import QCReportDateSelector from './reports/QCReportDateSelector';
 
 import { api } from "../api";
+import { convertDate } from '../utils/reportDates';
 import { AgGridReact } from 'ag-grid-react';
 import { handleGridCopy } from '../utils/gridCopyHandler';
 import 'ag-grid-community/styles/ag-grid.css';
@@ -33,15 +36,58 @@ const file_upload_name_mapping = {
     'file upload in progress': 'in progress'
 }
 
-const convertDate = (date) => {
-    if (date){
-        return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3")
-    } else {
-        return null
+// The per-mod File Status table shows file upload and text conversion side by
+// side. Each row is a shared status label, mapped to the workflow tag name that
+// means that status in each process ('file unavailable' is the upload failure).
+const file_status_row_labels = ['complete', 'needed', 'failed', 'in progress'];
+const file_status_processes = [
+    {
+        atpId: 'ATP:0000140',
+        label: 'File Upload',
+        tagNameByRowLabel: {
+            'complete': 'files uploaded',
+            'needed': 'file needed',
+            'failed': 'file unavailable',
+            'in progress': 'file upload in progress'
+        }
+    },
+    {
+        atpId: 'ATP:0000161',
+        label: 'File Conversion',
+        tagNameByRowLabel: {
+            'complete': 'file converted to text',
+            'needed': 'text conversion needed',
+            'failed': 'file to text conversion failed',
+            'in progress': 'text conversion in progress'
+        }
     }
-}
+];
 
-const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType }) => {
+// Placeholder for a QC report that has not loaded, or whose fetch failed. The
+// payload key is simply absent, which the render guards read as "no rows".
+const emptyQcReport = { 'date-produced': null };
+
+// A QC report endpoint, optionally pinned to one archived run. An empty or unset
+// datestamp asks for the latest report, which is what the page showed before a
+// date could be chosen.
+const qcReportUrl = (endpoint, datestamp) => (
+    datestamp ? `${endpoint}?datestamp=${datestamp}` : endpoint
+);
+
+// Shown when a QC report fails to load. Deliberately distinct from the "no rows
+// for this mod" message: these reports are acted on, so a failed request must
+// never read as a clean bill of health for the run the curator selected.
+const QCReportLoadError = ({ selectedDate }) => (
+    <div style={{ textAlign: 'left', fontWeight: 'bold' }}>
+        Could not load this report{selectedDate ? ` for ${convertDate(selectedDate)}` : ''}.
+        Please try again, or pick another date.
+    </div>
+);
+
+// columnType 'date_range' needs `processes` (see file_status_processes) and uses
+// `tagNames` as the row labels; workflowProcessAtpId then only keys the redux
+// date settings, and every process is fetched with those same settings.
+const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType, processes }) => {
   const [data, setData] = useState([]);
   const [totals, setTotals] = useState({});
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -49,6 +95,8 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
   const [countResync, setCountResync] = useState(0);
   const [dateRangeHeaders, setDateRangeHeaders] = useState([]);
   const [dateRangeData, setDateRangeData] = useState({});
+  // Labels of the processes whose columns the curator has unchecked (date_range only).
+  const [hiddenProcessLabels, setHiddenProcessLabels] = useState([]);
 
   const mods = useSelector(state => state.app.mods);
   const dateRangeDict = useSelector(state => state.reports.dateRangeDict);
@@ -67,15 +115,21 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
 
   useEffect(() => {
     const fetchData = async () => {
-      let url = `/workflow_tag/counters/?workflow_process_atp_id=${workflowProcessAtpId}`;
-      if (mod_abbreviation !== '') { url += `&mod_abbreviation=${mod_abbreviation}`; }
-      if ( (date_range_start !== '') && (date_range_end !== '') ) {
-          url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
+      const buildUrl = (atpId) => {
+        let url = `/workflow_tag/counters/?workflow_process_atp_id=${atpId}`;
+        if (mod_abbreviation !== '') { url += `&mod_abbreviation=${mod_abbreviation}`; }
+        if ( (date_range_start !== '') && (date_range_end !== '') ) {
+            url += `&date_option=${date_option}&date_range_start=${date_range_start}&date_range_end=${date_range_end}`; }
+        if (dateFrequencyValue !== '') { url += `&date_frequency=${dateFrequencyValue}`; }
+        return url;
+      };
       if ( (date_option !== 'default') && ( (date_range_start === '') ||  (date_range_end === '') ) ) { return; }
-      if (dateFrequencyValue !== '') { url += `&date_frequency=${dateFrequencyValue}`; }
+      const atpIds = processes ? processes.map(p => p.atpId) : [workflowProcessAtpId];
       setIsLoadingData(true);
       try {
-        const result = await api.get(url);
+        // Tag names differ between processes, so the responses merge into one list.
+        const responses = await Promise.all(atpIds.map(atpId => api.get(buildUrl(atpId))));
+        const result = { data: responses.flatMap(response => response.data) };
         setData(result.data);
 
         const totalsObj = {};
@@ -184,15 +238,26 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     ];
   }
   else if (columnType === 'date_range') {
+    // One total column per process, then (only when a report frequency is
+    // chosen) a column per process for each period. With no frequency the
+    // backend returns a single blank period that just repeats the totals.
+    const countColumn = (headerName, field) => ({
+      headerName,
+      field,
+      flex: 1,
+      cellStyle: { textAlign: 'left' },
+      headerClass: 'wft-bold-header'
+    });
+    const periodHeaders = (dateFrequencyValue === '') ? [] : dateRangeHeaders;
+    // Keep each process's original index so field names match the row data.
+    const shownProcesses = processes
+      .map((process, index) => ({ process, index }))
+      .filter(({ process }) => !hiddenProcessLabels.includes(process.label));
     columns = [
-      ...columns,
-      ...dateRangeHeaders.map(dateRangeHeader => ({
-        headerName: dateRangeHeader,
-        field: dateRangeHeader,
-        flex: 1,
-        cellStyle: { textAlign: 'left' },
-        headerClass: 'wft-bold-header'
-      })),
+      defaultColumns[0],
+      ...shownProcesses.map(({ process, index }) => countColumn(process.label, `process${index}_total`)),
+      ...periodHeaders.flatMap(dateRangeHeader => shownProcesses.map(({ process, index }) =>
+        countColumn(`${dateRangeHeader} ${process.label}`, `process${index}_${dateRangeHeader}`))),
     ];
   }
 
@@ -219,20 +284,21 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
     });
   }
   else if (columnType === 'date_range') {
-    rowData = tagNames.map(tagName => {
-      let total = 0;
-      const row = {
-        tag_name: nameMapping[tagName],
-      };
-      dateRangeHeaders.forEach(dateRange => {
-        const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === modSection && d.time_period === dateRange);
-        if (item && typeof item.tag_count === 'number') {
-          total += item.tag_count;
-          row[dateRange] = item.tag_count.toLocaleString(); }
-        else {
-          row[dateRange] = "0"; }
+    rowData = tagNames.map(rowLabel => {
+      const row = { tag_name: rowLabel };
+      processes.forEach((process, index) => {
+        const tagName = process.tagNameByRowLabel[rowLabel];
+        let total = 0;
+        dateRangeHeaders.forEach(dateRange => {
+          const item = data.find(d => d.workflow_tag_name === tagName && d.mod_abbreviation === modSection && d.time_period === dateRange);
+          if (item && typeof item.tag_count === 'number') {
+            total += item.tag_count;
+            row[`process${index}_${dateRange}`] = item.tag_count.toLocaleString(); }
+          else {
+            row[`process${index}_${dateRange}`] = "0"; }
+        });
+        row[`process${index}_total`] = total.toLocaleString();
       });
-      row['total'] = total;
       return row;
     });
   }
@@ -247,7 +313,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
           <Container fluid style={{ width: '90%' }}>
             <Row>
               <Col>
-                <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} columnType={columnType} dateFrequencyValue={dateFrequencyValue} />
+                <ReportsDatePicker facetName={workflowProcessAtpId} dateOptionValue={dateOptionValue} dateRangeValue={dateRangeValue} setValueFunction={setDateRangeDict} workflowProcessAtpId={workflowProcessAtpId} modSection={modSection} columnType={columnType} dateFrequencyValue={dateFrequencyValue} processes={processes} hiddenProcessLabels={hiddenProcessLabels} setHiddenProcessLabels={setHiddenProcessLabels} />
               </Col>
               <Col style={{ textAlign: "right" }}>
                 <Button
@@ -299,7 +365,7 @@ const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, name
   );
 }; // const const WorkflowStatTableCounters = ({ workflowProcessAtpId, title, tagNames, nameMapping, modSection, columnType })
 
-const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection, columnType, dateFrequencyValue }) => {
+const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValueFunction, workflowProcessAtpId, modSection, columnType, dateFrequencyValue, processes, hiddenProcessLabels, setHiddenProcessLabels }) => {
     const dispatch = useDispatch();
 
     function formatDateRange(dateRange){
@@ -359,7 +425,7 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
     }
 
     const dateOptions = { 'Date Workflow Updated': 'default', 'Date added to ABC': 'reference_created', 'Date Published': 'reference_published', 'Date Inside Corpus': 'inside_corpus' };
-    const dateFrequencies = { 'year': 'year', 'month': 'month', 'week': 'week' };
+    const dateFrequencies = { '': '', 'year': 'year', 'month': 'month', 'week': 'week' };
 
 
     return(
@@ -378,10 +444,28 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
         </div>
           {(() => {
             if (columnType === 'date_range') { return(
+              <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: "2em", paddingBottom: "0.5em" }}>
                 Report Frequency  <Form.Control as='select' id='dateFrequency' name='dateFrequency' style={{ width: "13em", marginRight: "3em" }} value={dateFrequencyValue} onChange={(e) => handleDateFrequencyChange(e.target.value)} >
                   {Object.entries(dateFrequencies).map(([label, value], index) => ( <option value={value} key={index}>{label}</option> ))}
-                </Form.Control></div>); }
+                </Form.Control></div>
+              {processes && (
+                <div style={{ display: 'flex', flexDirection: 'column', paddingBottom: "0.5em", minWidth: "10em", whiteSpace: "nowrap" }}>
+                  {processes.map(process => (
+                    <Form.Check
+                      key={process.label}
+                      type="checkbox"
+                      id={`show_${modSection}_${process.atpId}`}
+                      label={process.label}
+                      checked={!hiddenProcessLabels.includes(process.label)}
+                      onChange={(e) => setHiddenProcessLabels(prev => e.target.checked
+                        ? prev.filter(label => label !== process.label)
+                        : [...prev, process.label])}
+                    />
+                  ))}
+                </div>
+              )}
+              </div>); }
             return null
           })()}
       </div>
@@ -392,12 +476,12 @@ const ReportsDatePicker = ({ facetName, dateOptionValue, dateRangeValue, setValu
 const WorkflowStatModTablesContainer = ({modSection}) => {
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
+      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics <HelpDocLink url={HELP_DOC_URLS.workflowStatistics} title="Open the Workflow Statistics help documentation" /></h3>
                   <WorkflowStatTableCounters
                     workflowProcessAtpId="ATP:0000140"
-                    title="File Upload Current Status"
-                    tagNames={Object.keys(file_upload_name_mapping)}
-                    nameMapping={file_upload_name_mapping}
+                    title="File Status"
+                    tagNames={file_status_row_labels}
+                    processes={file_status_processes}
                     modSection={modSection}
                     columnType="date_range"
                   />
@@ -583,7 +667,7 @@ const WorkflowStatTablesContainer = ({modSection}) => {
   }
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics</h3>
+      <h3 style={{ marginBottom: '30px' }}>Workflow Statistics <HelpDocLink url={HELP_DOC_URLS.workflowStatistics} title="Open the Workflow Statistics help documentation" /></h3>
       <WorkflowStatTableCounters
         workflowProcessAtpId="ATP:0000140"
         title="File Upload Current Status"
@@ -605,10 +689,15 @@ const WorkflowStatTablesContainer = ({modSection}) => {
 };
 
 const QCReportObsoleteEntities = ({modSection}) => {
-  const dispatch = useDispatch();
-  const qcReportObsoleteEntities = useSelector(state => state.reports.qcReportObsoleteEntities);
+  // Kept in component state rather than redux: the report now varies by the
+  // selected run, so a store-level "fetched once" cache would pin the first
+  // date loaded and never refetch.
+  const [qcReportObsoleteEntities, setQcReportObsoleteEntities] = useState(emptyQcReport);
+  // null until the date list resolves; '' once it resolves with no history.
+  const [selectedDate, setSelectedDate] = useState(null);
 
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const [key, setKey] = useState(0);
   const gridRef = useRef();
@@ -617,24 +706,31 @@ const QCReportObsoleteEntities = ({modSection}) => {
   const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
 
   useEffect(() => {
+    if (selectedDate === null) { return; }
+    let cancelled = false;
+
     const fetchData = async () => {
-      const url = `/check/check_obsolete_entities`;
+      const url = qcReportUrl('/check/check_obsolete_entities', selectedDate);
       setIsLoadingData(true);
       try {
         const result = await api.get(url);
-        dispatch(setQcreportObsoleteEntities(result.data));
+        if (cancelled) { return; }
+        setQcReportObsoleteEntities(result.data);
+        setLoadFailed(false);
         setKey(prevKey => prevKey + 1);
-        // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
       } catch (error) {
+        if (cancelled) { return; }
         console.error('Error fetching data:', error);
+        setQcReportObsoleteEntities(emptyQcReport);
+        setLoadFailed(true);
       } finally {
-        setIsLoadingData(false);
+        if (!cancelled) { setIsLoadingData(false); }
       }
     };
 
-    if (qcReportObsoleteEntities['date-produced'] === null) {
-      fetchData(); }
-  }, [qcReportObsoleteEntities]);
+    fetchData();
+    return () => { cancelled = true; };
+  }, [selectedDate]);
 
   const columnDefs = [
     { headerName: "Entity Type", field: "entity_type", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
@@ -670,7 +766,7 @@ const QCReportObsoleteEntities = ({modSection}) => {
 
   let rowData = [];
 
-  if ( ( qcReportObsoleteEntities["obsolete_entities"] !== null) && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) {
+  if ( qcReportObsoleteEntities["obsolete_entities"] && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) {
     rowData = qcReportObsoleteEntities["obsolete_entities"][modSection].map(item => ({
       entity_type: item.entity_type,
       entity_status: item.entity_status,
@@ -684,12 +780,21 @@ const QCReportObsoleteEntities = ({modSection}) => {
 
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>QC Reports</h3>
       <div>
         <Container fluid style={{ width: '90%' }}>
           <Row>
             <Col>
-              <h4 style={{ textAlign: 'left' }}>TET Table Deleted or Obsoleted Entities</h4>
+              <h4 style={{ textAlign: 'left' }}>TET Table Deleted or Obsoleted Entities <HelpDocLink url={HELP_DOC_URLS.qcObsoleteEntities} title="Open the help documentation for this report" /></h4>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <QCReportDateSelector
+                reportKey="obsolete_entities"
+                instanceId={modSection}
+                selectedDate={selectedDate}
+                onChange={setSelectedDate}
+              />
             </Col>
           </Row>
           <Row>
@@ -702,9 +807,10 @@ const QCReportObsoleteEntities = ({modSection}) => {
                 </div>
               ) : (
                 <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
+                 {loadFailed ? (<QCReportLoadError selectedDate={selectedDate} />) : (<>
                  {( qcReportObsoleteEntities['date-produced'] !== null) &&
                   (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportObsoleteEntities['date-produced'])}<br /><br /></div>) }
-                 {( ( qcReportObsoleteEntities["obsolete_entities"] !== null) && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) ? (
+                 {( qcReportObsoleteEntities["obsolete_entities"] && ( modSection in qcReportObsoleteEntities["obsolete_entities"] ) ) ? (
                   <AgGridReact
                     key={key}
                     ref={gridRef}
@@ -720,15 +826,9 @@ const QCReportObsoleteEntities = ({modSection}) => {
                     gridOptions = {gridOptions}
                   />
                   ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No obsolete or deleted entities for {modSection}</div>)}
+                 </>)}
                 </div>
               )}
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <div style={{ textAlign: 'left' }}>
-                <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
-              </div>
             </Col>
           </Row>
         </Container>
@@ -738,30 +838,38 @@ const QCReportObsoleteEntities = ({modSection}) => {
 }; // const QCReportObsoleteEntities
 
 const QCReportRetractedPapers = ({modSection}) => {
-    const [isLoadingData, setIsLoadingData] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+    const [loadFailed, setLoadFailed] = useState(false);
     const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
     const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
-    const qcReportRedactedPapers = useSelector(state => state.reports.qcReportRedactedPapers);
-
-    const dispatch = useDispatch();
+    // Component state, not redux: see the note in QCReportObsoleteEntities.
+    const [qcReportRedactedPapers, setQcReportRedactedPapers] = useState(emptyQcReport);
+    const [selectedDate, setSelectedDate] = useState(null);
 
     useEffect(() => {
+        if (selectedDate === null) { return; }
+        let cancelled = false;
+
         const fetchData = async () => {
-            const url = `/check/check_redacted_references_with_tags`;
+            const url = qcReportUrl('/check/check_redacted_references_with_tags', selectedDate);
             setIsLoadingData(true);
             try {
                 const result = await api.get(url);
-                dispatch(setQcreportRecactedPapers(result.data));
-                //setKey(prevKey => prevKey + 1);
-                // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
+                if (cancelled) { return; }
+                setQcReportRedactedPapers(result.data);
+                setLoadFailed(false);
             } catch (error) {
+                if (cancelled) { return; }
                 console.error('Error fetching data:', error);
+                setQcReportRedactedPapers(emptyQcReport);
+                setLoadFailed(true);
             } finally {
-                setIsLoadingData(false);
+                if (!cancelled) { setIsLoadingData(false); }
             }
         };
-        if (qcReportRedactedPapers['date-produced'] === null) {fetchData(); }
-    }, [qcReportRedactedPapers, dispatch]);
+        fetchData();
+        return () => { cancelled = true; };
+    }, [selectedDate]);
 
     const columnDefs = [
         { headerName: "Reference ID",
@@ -779,7 +887,7 @@ const QCReportRetractedPapers = ({modSection}) => {
 
     let rowData = [];
 
-    if ( ( qcReportRedactedPapers["redacted-references"] !== null) && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) {
+    if ( qcReportRedactedPapers["redacted-references"] && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) {
         rowData = qcReportRedactedPapers["redacted-references"][modSection].map(item => ({
             reference_id: item.reference_id,
             reference_status: 'Retracted'
@@ -792,7 +900,17 @@ const QCReportRetractedPapers = ({modSection}) => {
             <Container fluid style={{ width: '90%' }}>
                 <Row>
                     <Col>
-                        <h4 style={{ textAlign: 'left' }}>Retracted References with Manual Tags</h4>
+                        <h4 style={{ textAlign: 'left' }}>Retracted References with Manual Tags <HelpDocLink url={HELP_DOC_URLS.qcRetractedRefs} title="Open the help documentation for this report" /></h4>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <QCReportDateSelector
+                            reportKey="redacted_references"
+                instanceId={modSection}
+                            selectedDate={selectedDate}
+                            onChange={setSelectedDate}
+                        />
                     </Col>
                 </Row>
                 <Row>
@@ -805,9 +923,10 @@ const QCReportRetractedPapers = ({modSection}) => {
                             </div>
                         ) : (
                             <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
+                                {loadFailed ? (<QCReportLoadError selectedDate={selectedDate} />) : (<>
                                 {( qcReportRedactedPapers['date-produced'] !== null) &&
                                     (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportRedactedPapers['date-produced'])}<br /><br /></div>) }
-                                {( ( qcReportRedactedPapers["redacted-references"] !== null) && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) ? (
+                                {( qcReportRedactedPapers["redacted-references"] && ( modSection in qcReportRedactedPapers["redacted-references"] ) ) ? (
                                     <AgGridReact
                                         rowData={rowData}
                                         columnDefs={columnDefs}
@@ -821,15 +940,9 @@ const QCReportRetractedPapers = ({modSection}) => {
                                         gridOptions = {gridOptions}
                                     />
                                 ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No retracted papers with manual tags for {modSection}</div>)}
+                                </>)}
                             </div>
                         )}
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <div style={{ textAlign: 'left' }}>
-                            <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
-                        </div>
                     </Col>
                 </Row>
             </Container>
@@ -838,23 +951,34 @@ const QCReportRetractedPapers = ({modSection}) => {
 };
 
 const QCObsoletePmids = ({ modSection }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
+    if (selectedDate === null) { return; }
+    let cancelled = false;
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const result = await api.get(`/check/check_obsolete_pmids`);
+        const result = await api.get(qcReportUrl('/check/check_obsolete_pmids', selectedDate));
+        if (cancelled) { return; }
         setData(result.data);
+        setLoadFailed(false);
       } catch (error) {
+        if (cancelled) { return; }
         console.error('Error fetching obsolete PMIDs:', error);
+        setData(null);
+        setLoadFailed(true);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) { setIsLoading(false); }
       }
     };
     fetchData();
-  }, []);
+    return () => { cancelled = true; };
+  }, [selectedDate]);
 
   const produced = data?.['date-produced'];
   const pmids = data?.obsolete_pmids?.[modSection] || [];
@@ -863,7 +987,18 @@ const QCObsoletePmids = ({ modSection }) => {
     <Container fluid style={{ width: '90%' }}>
       <Row style={{ paddingTop: '1em', paddingBottom: '0.5em' }}>
         <Col>
-          <h4 style={{ textAlign: 'left' }}>PMIDs obsoleted this month</h4>
+          <h4 style={{ textAlign: 'left' }}>PMIDs obsoleted this month <HelpDocLink url={HELP_DOC_URLS.qcObsoletePmids} title="Open the help documentation for this report" /></h4>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col>
+          <QCReportDateSelector
+            reportKey="obsolete_pmids"
+                instanceId={modSection}
+            selectedDate={selectedDate}
+            onChange={setSelectedDate}
+          />
         </Col>
       </Row>
 
@@ -875,6 +1010,8 @@ const QCObsoletePmids = ({ modSection }) => {
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             </div>
+          ) : loadFailed ? (
+            <QCReportLoadError selectedDate={selectedDate} />
           ) : (
             <>
               {produced && (
@@ -895,16 +1032,6 @@ const QCObsoletePmids = ({ modSection }) => {
                   No obsolete PMIDs this month for {modSection}
                 </div>
               )}
-
-              <div style={{ textAlign: 'left', marginTop: '0.5em' }}>
-                <a
-                  href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  report history
-                </a>
-              </div>
             </>
           )}
         </Col>
@@ -915,10 +1042,12 @@ const QCObsoletePmids = ({ modSection }) => {
 
 
 const QCReportDuplicateOrcids = ({ modSection }) => {
-  const dispatch = useDispatch();
-  const qcReportDuplicateOrcids = useSelector(state => state.reports.qcReportDuplicateOrcids);
+  // Component state, not redux: see the note in QCReportObsoleteEntities.
+  const [qcReportDuplicateOrcids, setQcReportDuplicateOrcids] = useState(emptyQcReport);
+  const [selectedDate, setSelectedDate] = useState(null);
 
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const [key, setKey] = useState(0);
   const gridRef = useRef();
@@ -927,24 +1056,31 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
   const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
 
   useEffect(() => {
+    if (selectedDate === null) { return; }
+    let cancelled = false;
+
     const fetchData = async () => {
-      const url = `/check/check_duplicate_orcids`;
+      const url = qcReportUrl('/check/check_duplicate_orcids', selectedDate);
       setIsLoadingData(true);
       try {
         const result = await api.get(url);
-        dispatch(setQcreportDuplicateOrcids(result.data));
+        if (cancelled) { return; }
+        setQcReportDuplicateOrcids(result.data);
+        setLoadFailed(false);
         setKey(prevKey => prevKey + 1);
-        // console.log('result.data'); console.log(result.data); console.log(JSON.stringify(result.data));
       } catch (error) {
+        if (cancelled) { return; }
         console.error('Error fetching data:', error);
+        setQcReportDuplicateOrcids(emptyQcReport);
+        setLoadFailed(true);
       } finally {
-        setIsLoadingData(false);
+        if (!cancelled) { setIsLoadingData(false); }
       }
     };
 
-    if (qcReportDuplicateOrcids['date-produced'] === null) {
-      fetchData(); }
-  }, [qcReportDuplicateOrcids]);
+    fetchData();
+    return () => { cancelled = true; };
+  }, [selectedDate]);
 
     const columnDefs = [
       { headerName: "Reference ID",
@@ -959,7 +1095,7 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
     ];
 
   let rowData = [];
-  if ( ( qcReportDuplicateOrcids["duplicate_orcids"] !== null) && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) {
+  if ( qcReportDuplicateOrcids["duplicate_orcids"] && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) {
     rowData = qcReportDuplicateOrcids["duplicate_orcids"][modSection].map(item => ({
       reference_curie: item.reference_curie,
       orcid: item.orcid,
@@ -969,12 +1105,21 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
 
   return (
     <div>
-      <h3 style={{ marginBottom: '30px' }}>QC Reports</h3>
       <div>
         <Container fluid style={{ width: '90%' }}>
           <Row>
             <Col>
-              <h4 style={{ textAlign: 'left' }}>Duplicate ORCIDs</h4>
+              <h4 style={{ textAlign: 'left' }}>Duplicate ORCIDs <HelpDocLink url={HELP_DOC_URLS.qcDuplicateOrcids} title="Open the help documentation for this report" /></h4>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <QCReportDateSelector
+                reportKey="duplicate_orcids"
+                instanceId={modSection}
+                selectedDate={selectedDate}
+                onChange={setSelectedDate}
+              />
             </Col>
           </Row>
           <Row>
@@ -987,9 +1132,10 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
                 </div>
               ) : (
                 <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
+                 {loadFailed ? (<QCReportLoadError selectedDate={selectedDate} />) : (<>
                  {( qcReportDuplicateOrcids['date-produced'] !== null) &&
                   (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportDuplicateOrcids['date-produced'])}<br /><br /></div>) }
-                 {( ( qcReportDuplicateOrcids["duplicate_orcids"] !== null) && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) ? (
+                 {( qcReportDuplicateOrcids["duplicate_orcids"] && ( modSection in qcReportDuplicateOrcids["duplicate_orcids"] ) ) ? (
                   <AgGridReact
                     key={key}
                     ref={gridRef}
@@ -1005,15 +1151,9 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
                     gridOptions = {gridOptions}
                   />
                   ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No duplicate ORCIDs for {modSection}</div>)}
+                 </>)}
                 </div>
               )}
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <div style={{ textAlign: 'left' }}>
-                <br /><a href={`${process.env.REACT_APP_ABC_FILE_BASE_URL}/reports/QC/`} rel="noreferrer noopener" target="_blank">report history</a>
-              </div>
             </Col>
           </Row>
         </Container>
@@ -1057,6 +1197,9 @@ const ReportsContainer = () => {
           <Tab key={mod} eventKey={mod} title={mod}>
             <Tabs mountOnEnter="true" defaultActiveKey={`${mod}_qcreport`} id={`${mod}_reports-tabs`}>
               <Tab eventKey={`${mod}_qcreport`} title="QC Reports">
+                {/* Tab-level heading: the individual report components only carry
+                    their own h4 titles. */}
+                <h3 style={{ marginBottom: '30px' }}>QC Reports <HelpDocLink url={HELP_DOC_URLS.abcReportsPage} title="Open the ABC Reports Page help documentation" /></h3>
                 <QCReportObsoleteEntities modSection={mod} />
                   <hr/>
                 <QCReportRetractedPapers modSection={mod} />

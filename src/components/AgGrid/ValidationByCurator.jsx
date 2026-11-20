@@ -17,6 +17,9 @@ export default (props) => {
     const topicEntitySourceId = useSelector(state => state.biblio.topicEntitySourceId);
     const accessLevel = (testerMod !== 'No') ? testerMod : cognitoMod;
 
+    // Infinite row model (SCRUM-6618): loading row stubs have no data yet.
+    if (!props.data) return null;
+
     const checkBoxElement = () => {
         const handleValidationClick = async (validation) => {
             let payload = {
@@ -27,10 +30,11 @@ export default (props) => {
                 negated: validation === 'positive' ? props.data.negated : !props.data.negated,
                 note: null,
                 data_novelty: props.data.data_novelty,
+                data_context: props.data.data_context,
                 reference_curie: referenceCurie,
                 species: props.data.species,
                 topic: props.data.topic,
-                topic_entity_tag_source_id: topicEntitySourceId,
+                tag_source_id: topicEntitySourceId,
                 force_insertion: true
             }
             
@@ -66,7 +70,7 @@ export default (props) => {
     return (
         <Container style={{ padding: '0px'}}><Row>
             <Col xs={3}>
-                {(props.data.topic_entity_tag_source.secondary_data_provider_abbreviation === accessLevel) && (uid !== props.data.created_by) && (!props.data.validating_users || !props.data.validating_users.includes(uid)) ? checkBoxElement() : null}
+                {(props.data.tag_source.secondary_data_provider_abbreviation === accessLevel) && (uid !== props.data.created_by) && (!props.data.validating_users || !props.data.validating_users.includes(uid)) ? checkBoxElement() : null}
             </Col>
             <Col style={{textOverflow: 'ellipsis', overflow: 'hidden'}}>
                 {props.data.validation_by_professional_biocurator}

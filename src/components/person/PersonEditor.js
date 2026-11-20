@@ -10,46 +10,32 @@ import Badge from 'react-bootstrap/Badge';
 import Container from 'react-bootstrap/Container';
 
 import { api } from '../../api';
+import { useVocabulary } from '../../hooks/useVocabulary';
+import { useCheckPatterns } from '../../hooks/useCheckPatterns';
+import { normalizePrefix, validateCurie, joinCurie } from '../../utils/xrefCurie';
 import { roleFlagDisabled } from '../../utils/labPersonRoles';
 import PersonCuriePicker from './PersonCuriePicker';
 import LabCuriePicker from './LabCuriePicker';
-import PersonEditorLayoutModal from '../settings/PersonEditorLayoutModal';
-import { SECTION_DEFS, layoutToCssGrid, defaultHiddenSections } from './personEditorSections';
-import './personEditorSections.css';
+import SectionLayoutModal from '../settings/SectionLayoutModal';
+import {
+  SECTION_DEFS,
+  DEFAULT_LAYOUT,
+  PERSON_EDITOR_LAYOUT_COMPONENT_NAME,
+  layoutToCssGrid,
+  defaultHiddenSections,
+} from './personSections';
+import '../sectionGrid.css';
+import { formatTimestamp, metaLabelFor } from '../../utils/recordMeta';
 
-const STATUS_OPTIONS = ['active', 'retired', 'deceased'];
-const PRIVACY_OPTIONS = ['show_all', 'logged_in_only', 'fully_hidden', 'hide_email'];
-const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
-// PersonPersonRole controlled vocabulary (person_lineage.relationship).
-const PERSON_PERSON_ROLES = [
-  'phd_supervisor_of',
-  'postdoc_supervisor_of',
-  'masters_supervisor_of',
-  'undergrad_supervisor_of',
-  'highschool_supervisor_of',
-  'sabbatical_supervisor_of',
-  'lab_visitor_supervisor_of',
-  'research_staff_supervisor_of',
-  'assistant_professor_supervisor_of',
-  'unknown_supervisor_of',
-  'collaborator_of',
-];
-
-const formatTimestamp = (s) => {
-  if (!s) return '';
-  try {
-    const str = String(s);
-    const d = new Date(str);
-    if (Number.isNaN(d.getTime())) return str;
-    const hasTime = /T?\d{2}:\d{2}/.test(str);
-    if (hasTime) {
-      return d.toISOString().slice(0, 19).replace('T', ' ');
-    }
-    return d.toISOString().slice(0, 10);
-  } catch {
-    return String(s);
-  }
+// person_lineage.relationship is a vocabulary term: read shape is the object
+// {value,label,is_obsolete} (or null), write is the term id (int). Keep it a STRING in
+// state (select value / change events / saved-key all compare consistently); the save
+// bodies convert to Number only when sending to the API.
+const relationshipValue = (rel) => {
+  const v = rel && typeof rel === 'object' ? rel.value : rel;
+  return v == null || v === '' ? '' : String(v);
 };
+
 
 // Pull a human-readable message out of an Axios error.
 const errDetail = (err) => {
@@ -62,11 +48,13 @@ const errDetail = (err) => {
 // the meta pencil). Snap = JSON of the fields.
 const nameFields = (r) => ({ first_name: r.first_name || '', middle_name: r.middle_name || '', last_name: r.last_name || '', is_primary: !!r.is_primary });
 const emailFields = (r) => ({ email_address: r.email_address || '', invalidated: !!r.invalidated });
+const instFields = (r) => ({ institution: r.institution || '', invalidated: !!r.invalidated });
 const noteFields = (r) => ({ note: r.note || '' });
 const xrefFields = (r) => ({ curie_prefix: r.curie_prefix || '', curie: r.curie || '', is_obsolete: !!r.is_obsolete });
 const labFields = (r) => ({ labCurie: r.labCurie || '', alum: !!r.alum, is_pi: !!r.is_pi, former_pi: !!r.former_pi });
 const nameSnap = (r) => JSON.stringify(nameFields(r));
 const emailSnap = (r) => JSON.stringify(emailFields(r));
+const instSnap = (r) => JSON.stringify(instFields(r));
 const noteSnap = (r) => JSON.stringify(noteFields(r));
 const xrefSnap = (r) => JSON.stringify(xrefFields(r));
 const labSnap = (r) => JSON.stringify(labFields(r));
@@ -210,6 +198,11 @@ const FieldLine = ({ label, children, ts, trail, status, error, onDismissError }
                   flex: 1,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  // Explicit: this div is wider than its text, so without it the
+                  // text-align: center that .App sets app-wide is inherited and the
+                  // label floats mid-column -- obvious as soon as one of the two
+                  // halves is toggled off and the slack appears.
+                  textAlign: 'right',
                 }}
               >
                 {metaContent}
@@ -330,7 +323,7 @@ const LineageClaimRow = ({ submission, lead = '', showStatus = false, style, tra
     <span style={{ ...claimCellBase, width: 240 }} title={submission.person_subject_name}>
       {lead}{submission.person_subject_name}
     </span>
-    <span style={{ ...claimCellBase, width: 260 }} title={submission.relationship}>{submission.relationship}</span>
+    <span style={{ ...claimCellBase, width: 260 }} title={submission.relationship?.label}>{submission.relationship?.label}</span>
     <span style={{ ...claimCellBase, width: 240 }} title={submission.person_object_name}>{submission.person_object_name}</span>
     <span style={{ ...claimCellBase, width: DATES_COL_WIDTH }}>{dateRange(submission.start_date, submission.end_date)}</span>
     <span style={{ ...claimCellBase, width: 'auto' }}>
@@ -345,7 +338,7 @@ const PersonEditor = ({ person }) => {
   const p = person ?? {};
 
   // Effective MOD (testerMod overrides cognitoMod) drives per-section default
-  // visibility — see SECTION_DEFS `mods` gating in personEditorSections.js.
+  // visibility — see SECTION_DEFS `mods` gating in personSections.js.
   const cognitoMod = useSelector((s) => s.isLogged.cognitoMod);
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const effectiveMod = testerMod !== 'No' ? testerMod : cognitoMod;
@@ -396,12 +389,7 @@ const PersonEditor = ({ person }) => {
   };
 
   // Compose the per-field metadata string honoring the two toggles independently.
-  const metaLabel = (by, date) => {
-    const parts = [];
-    if (showCurator && by) parts.push(by);
-    if (showTimestamps && date) parts.push(formatTimestamp(date));
-    return parts.length ? parts.join(' · ') : null;
-  };
+  const metaLabel = metaLabelFor({ showCurator, showTimestamps });
 
   // ---- person scalar/toggle save-on-blur ----
   // Editable person scalars are controlled here; each saves on blur (text) or change
@@ -466,12 +454,11 @@ const PersonEditor = ({ person }) => {
       });
   };
 
-  // ---- person string-array save (institution / webpage) ----
+  // ---- person string-array save (webpage) ----
   // Saved as one array via PATCH /person, but each ROW tracks its own last-saved
   // value (_savedValue) so only the row you changed shows "unsaved", not the whole
   // section.
   const [savedArrays, setSavedArrays] = useState({
-    institution: (p.institution ?? []).filter(Boolean),
     webpage: (p.webpage ?? []).filter(Boolean),
   });
   const arraysEqual = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
@@ -510,15 +497,16 @@ const PersonEditor = ({ person }) => {
     }
   };
 
+  const activeStatusVocab = useVocabulary('person_active_status');
+  const privacyVocab = useVocabulary('person_privacy');
+  const personXrefPatterns = useCheckPatterns('person');
+  // Keep a stored value visible even if it isn't among the fetched options.
+  const withCurrent = (opts, current) =>
+    !current || opts.some((o) => o.value === current) ? opts : [...opts, { value: current, label: current }];
   const currentStatus = live.active_status;
-  const statusOptions = STATUS_OPTIONS.includes(currentStatus)
-    ? STATUS_OPTIONS
-    : [...STATUS_OPTIONS, currentStatus];
-
+  const statusOptions = withCurrent(activeStatusVocab.options, currentStatus);
   const currentPrivacy = live.privacy;
-  const privacyOptions = PRIVACY_OPTIONS.includes(currentPrivacy)
-    ? PRIVACY_OPTIONS
-    : [...PRIVACY_OPTIONS, currentPrivacy];
+  const privacyOptions = withCurrent(privacyVocab.options, currentPrivacy);
 
   // Names
   const emptyName = () => {
@@ -584,11 +572,33 @@ const PersonEditor = ({ person }) => {
   const initialUrls = (p.webpage ?? []).map((u) => ({ url: u ?? '', _savedValue: u ?? '', _status: null, _error: null }));
   const [urls, updateUrl, removeUrl, setUrls] = useAutoGrowList(initialUrls, emptyUrl, urlIsEmpty);
 
-  // Institutions — saved as the person.institution array; per-row _savedValue tracks dirty.
-  const emptyInst = () => ({ value: '', _savedValue: '', _status: null, _error: null });
-  const instIsEmpty = (it) => !it.value;
-  const initialInsts = (p.institution ?? []).map((it) => ({ value: it ?? '', _savedValue: it ?? '', _status: null, _error: null }));
-  const [insts, updateInst, removeInst, setInsts] = useAutoGrowList(initialInsts, emptyInst, instIsEmpty);
+  // Institutions — person_institution child rows, like emails. An institution the
+  // person has left is kept and marked old (date_made_old_institution) rather
+  // than deleted, and the same institution may appear twice (one old, one
+  // active) because people return to institutions.
+  const emptyInst = () => {
+    const r = {
+      institution: '', invalidated: false, _origOldDate: null,
+      _ts: null, _by: null, _created: null, _id: null, _status: null, _error: null,
+    };
+    return { ...r, _saved: instFields(r), _savedKey: instSnap(r) };
+  };
+  const instIsEmpty = (it) => !it.institution;
+  const initialInsts = (p.institutions ?? []).map((it) => {
+    const r = {
+      institution: it.institution ?? '',
+      invalidated: !!it.date_made_old_institution,
+      _origOldDate: it.date_made_old_institution ?? null,
+      _ts: it.date_updated ?? null,
+      _by: it.updated_by ?? null,
+      _created: it.date_created ?? null,
+      _id: it.person_institution_id ?? null,
+      _status: null,
+      _error: null,
+    };
+    return { ...r, _saved: instFields(r), _savedKey: instSnap(r) };
+  });
+  const [insts, updateInst, removeInst] = useAutoGrowList(initialInsts, emptyInst, instIsEmpty);
 
   // Cross references — page url is API-only, not editable, not shown
   const emptyXref = () => {
@@ -615,13 +625,17 @@ const PersonEditor = ({ person }) => {
   });
   const [xrefs, updateXref, removeXref] = useAutoGrowList(initialXrefs, emptyXref, xrefIsEmpty);
 
-  // Notes / comments
+  // Notes: internal ones are the "Comments (internal)" section, public ones
+  // (internal false) the "Public notes" section. A note never moves between them
+  // here -- a private comment must not become public with one click; to change
+  // one, add it to the other section and remove the old one. A note without the
+  // flag counts as internal.
   const emptyNote = () => {
     const r = { note: '', _ts: null, _by: null, _id: null, _status: null, _error: null };
     return { ...r, _saved: noteFields(r), _savedKey: noteSnap(r) };
   };
   const noteIsEmpty = (n) => !n.note;
-  const initialNotes = (p.notes ?? []).map((n) => {
+  const toNoteRow = (n) => {
     const r = {
       note: n.note ?? '',
       _ts: n.date_updated ?? null,
@@ -631,8 +645,12 @@ const PersonEditor = ({ person }) => {
       _error: null,
     };
     return { ...r, _saved: noteFields(r), _savedKey: noteSnap(r) };
-  });
+  };
+  const initialNotes = (p.notes ?? []).filter((n) => n.internal !== false).map(toNoteRow);
+  const initialPublicNotes = (p.notes ?? []).filter((n) => n.internal === false).map(toNoteRow);
   const [notes, updateNote, removeNote] = useAutoGrowList(initialNotes, emptyNote, noteIsEmpty);
+  const [publicNotes, updatePublicNote, removePublicNote] =
+    useAutoGrowList(initialPublicNotes, emptyNote, noteIsEmpty);
 
   // Laboratory connections — editable, auto-growing like the other lists. The
   // alum / is_pi / former_pi DateTime fields are shown as checkboxes; the stored
@@ -739,7 +757,7 @@ const PersonEditor = ({ person }) => {
     return {
       otherCurie: (side === 'subject' ? s.person_object_curie : s.person_subject_curie) || '',
       otherName: (side === 'subject' ? s.person_object_name : s.person_subject_name) || '',
-      relationship: s.relationship || '',
+      relationship: relationshipValue(s.relationship),
       start: s.start_date ? String(s.start_date).slice(0, 10) : '',
       end: s.end_date ? String(s.end_date).slice(0, 10) : '',
     };
@@ -753,7 +771,7 @@ const PersonEditor = ({ person }) => {
   const handleValidate = (s) => {
     const e = subEdit(s);
     const side = lockedSide(s);
-    const body = { relationship: e.relationship || undefined };
+    const body = { relationship: e.relationship ? Number(e.relationship) : undefined };
     if (e.start) body.start_date = e.start;
     if (e.end) body.end_date = e.end;
     // The locked (loaded-person) side is omitted, so validate falls back to the
@@ -784,7 +802,7 @@ const PersonEditor = ({ person }) => {
     if (existing) return existing;
     const side = canonLockedSide(c);
     return {
-      relationship: c.relationship || '',
+      relationship: relationshipValue(c.relationship),
       start: c.start_date ? String(c.start_date).slice(0, 10) : '',
       end: c.end_date ? String(c.end_date).slice(0, 10) : '',
       otherCurie: (side === 'subject' ? c.person_object_curie : c.person_subject_curie) || '',
@@ -798,7 +816,7 @@ const PersonEditor = ({ person }) => {
     const e = canonEdit(c);
     const side = canonLockedSide(c);
     const body = {
-      relationship: e.relationship || undefined,
+      relationship: e.relationship ? Number(e.relationship) : undefined,
       start_date: e.start || null,
       end_date: e.end || null,
     };
@@ -841,7 +859,7 @@ const PersonEditor = ({ person }) => {
     api.post('/person_lineage/', {
       person_subject_curie_or_id: newCanon.subjectCurie,
       person_object_curie_or_id: newCanon.objectCurie,
-      relationship: newCanon.relationship,
+      relationship: Number(newCanon.relationship),
       start_date: newCanon.start || undefined,
       end_date: newCanon.end || undefined,
     })
@@ -856,10 +874,23 @@ const PersonEditor = ({ person }) => {
       .finally(() => setLineageBusy(false));
   };
 
-  const relOptionsFor = (current) =>
-    PERSON_PERSON_ROLES.includes(current) || !current
-      ? PERSON_PERSON_ROLES
-      : [...PERSON_PERSON_ROLES, current];
+  const relationshipVocab = useVocabulary('person_person_relationship');
+  // Vocab options (obsolete filtered); inject the current value as a disabled
+  // "(obsolete)" option if it isn't among the offered terms.
+  const relOptionsFor = (current) => {
+    const opts = relationshipVocab.options;
+    if (current && !opts.some((o) => String(o.value) === String(current))) {
+      const label = relationshipVocab.labelFor(current);
+      // While the vocab is still loading, options is [] and labelFor returns the raw id;
+      // don't label a not-yet-resolved term "(obsolete)" (misleading flash).
+      return [...opts, {
+        value: current,
+        label: relationshipVocab.loading ? label : `${label} (obsolete)`,
+        disabled: !relationshipVocab.loading,
+      }];
+    }
+    return opts;
+  };
 
   const setNamePrimary = (idx) =>
     setNames((prev) => prev.map((row, i) => ({ ...row, is_primary: i === idx })));
@@ -872,6 +903,12 @@ const PersonEditor = ({ person }) => {
 
   // Create (POST, when complete) or update (PATCH) one child row; tracks status on
   // the row itself. `after` runs on success (e.g. refetch a collection).
+  // NOTE: the .then below writes a FIXED set of row fields. Any other field the
+  // SERVER owns (a timestamp it assigns or normalizes, a value it rewrites) must
+  // be pulled back explicitly via `applyResp`, or the row keeps its pre-save
+  // value until the page is reloaded. This bit both saveEmail and saveInst:
+  // each sent a client-computed date_made_old_* but never adopted the stored
+  // value, so "old since" never rendered. See saveLab for the pattern.
   const persistChild = ({ list, update, i, idKey, endpoint, createPath, completeFn, bodyFn, snap, savedOf, after, override, applyResp }) => {
     const row = { ...list[i], ...(override || {}) };
     // Guard against a second save firing while one is in flight — otherwise a
@@ -975,8 +1012,44 @@ const PersonEditor = ({ person }) => {
       return body;
     },
     snap: emailSnap, savedOf: emailFields,
+    // The row computes a client-side old-date to SEND, but the server is the
+    // authority on what was stored. Without this the row keeps its pre-save
+    // _origOldDate (null on the first tick), so "old since" only appeared after
+    // a reload -- "created" showed because that came from the initial load.
+    applyResp: (d) => ({
+      _origOldDate: d.date_made_old_email ?? null,
+      _created: d.date_created ?? null,
+    }),
   });
   const deleteEmail = (i) => deleteChild({ list: emails, update: updateEmail, remove: removeEmail, i, endpoint: '/person_email' });
+
+  // Institutions — same child-row persistence as emails. No uniqueness check on
+  // the API side, so re-adding an institution the person has returned to is fine.
+  const saveInst = (i, override) => persistChild({
+    list: insts, update: updateInst, i, override,
+    idKey: 'person_institution_id', endpoint: '/person_institution', createPath: `/person_institution/person/${p.curie}`,
+    completeFn: (r) => !!(r.institution || '').trim(),
+    bodyFn: (r, isCreate, changed) => {
+      const full = {
+        institution: (r.institution || '').trim(),
+        // checked => mark old (keep an existing old-date, else now); unchecked => clear.
+        date_made_old_institution: r.invalidated ? (r._origOldDate || new Date().toISOString()) : null,
+      };
+      if (isCreate) return full;
+      const body = {};
+      if (changed.includes('institution')) body.institution = full.institution;
+      if (changed.includes('invalidated')) body.date_made_old_institution = full.date_made_old_institution;
+      return body;
+    },
+    snap: instSnap, savedOf: instFields,
+    // See the note on saveEmail's applyResp: adopt the server's stored dates so
+    // "old since" renders immediately instead of only after a reload.
+    applyResp: (d) => ({
+      _origOldDate: d.date_made_old_institution ?? null,
+      _created: d.date_created ?? null,
+    }),
+  });
+  const deleteInst = (i) => deleteChild({ list: insts, update: updateInst, remove: removeInst, i, endpoint: '/person_institution' });
   // Email is optional, but if one is entered it must be a valid address. An empty
   // field just doesn't save; a non-empty invalid one shows a validation error.
   const handleEmailBlur = (i) => {
@@ -986,28 +1059,38 @@ const PersonEditor = ({ person }) => {
     saveEmail(i);
   };
 
-  // Notes
-  const saveNote = (i) => persistChild({
-    list: notes, update: updateNote, i,
+  // Notes. `internal` is sent only on create; an edit changes the text only.
+  const noteSaver = (list, update, internal) => (i) => persistChild({
+    list, update, i,
     idKey: 'person_note_id', endpoint: '/person_note', createPath: '/person_note/',
     completeFn: (r) => !!(r.note && r.note.trim()),
     bodyFn: (r, isCreate, changed) => {
-      if (isCreate) return { note: r.note, person_curie: p.curie };
+      if (isCreate) return { note: r.note, person_curie: p.curie, internal };
       const body = {};
       if (changed.includes('note')) body.note = r.note;
       return body;
     },
     snap: noteSnap, savedOf: noteFields,
   });
+  const saveNote = noteSaver(notes, updateNote, true);
+  const savePublicNote = noteSaver(publicNotes, updatePublicNote, false);
   const deleteNote = (i) => deleteChild({ list: notes, update: updateNote, remove: removeNote, i, endpoint: '/person_note' });
+  const deletePublicNote = (i) => deleteChild({
+    list: publicNotes, update: updatePublicNote, remove: removePublicNote, i, endpoint: '/person_note',
+  });
 
   // Cross references — recombine prefix + id into the API's single curie.
   const saveXref = (i, override) => persistChild({
     list: xrefs, update: updateXref, i, override,
     idKey: 'person_cross_reference_id', endpoint: '/person_cross_reference', createPath: '/person_cross_reference/',
-    completeFn: (r) => !!((r.curie_prefix || '').trim() && (r.curie || '').trim()),
+    completeFn: (r) => {
+      const pfx = normalizePrefix(r.curie_prefix, personXrefPatterns.prefixes);
+      return !!(pfx.trim() && (r.curie || '').trim()) &&
+        validateCurie(pfx, r.curie, personXrefPatterns.regexFor);
+    },
     bodyFn: (r, isCreate, changed) => {
-      const full = { curie: `${r.curie_prefix}:${(r.curie || '').trim()}`, is_obsolete: !!r.is_obsolete };
+      const pfx = normalizePrefix(r.curie_prefix, personXrefPatterns.prefixes);
+      const full = { curie: joinCurie(pfx, r.curie), is_obsolete: !!r.is_obsolete };
       if (isCreate) return { ...full, person_curie: p.curie };
       const body = {};
       // prefix + id both feed the single API `curie` field.
@@ -1073,12 +1156,17 @@ const PersonEditor = ({ person }) => {
   };
   const labelForUrl = (u, i) =>
     i === urls.length - 1 && urlIsEmpty(u) ? 'webpage (add)' : 'webpage';
-  const labelForInst = (it, i) =>
-    i === insts.length - 1 && instIsEmpty(it) ? 'institution (add)' : 'institution';
+  const labelForInst = (it, i) => {
+    if (i === insts.length - 1 && instIsEmpty(it)) return 'institution (add)';
+    if (it.invalidated) return 'old_institution';
+    return 'institution';
+  };
   const labelForXref = (x, i) =>
     i === xrefs.length - 1 && xrefIsEmpty(x) ? 'xref (add)' : x.curie_prefix || 'xref';
   const labelForNote = (n, i) =>
     i === notes.length - 1 && noteIsEmpty(n) ? 'comment (add)' : 'comment';
+  const labelForPublicNote = (n, i) =>
+    i === publicNotes.length - 1 && noteIsEmpty(n) ? 'public note (add)' : 'public note';
   const labelForLab = (l, i) =>
     i === labs.length - 1 && labIsEmpty(l) ? 'laboratory (add)' : 'laboratory';
 
@@ -1124,8 +1212,8 @@ const PersonEditor = ({ person }) => {
             onChange={(ev) => { setLiveField('active_status', ev.target.value); saveScalar('active_status', ev.target.value); }}
             style={{ maxWidth: 240 }}
           >
-            {statusOptions.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {statusOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </HlControl>
         </FieldLine>
@@ -1143,8 +1231,8 @@ const PersonEditor = ({ person }) => {
             onChange={(ev) => { setLiveField('privacy', ev.target.value); saveScalar('privacy', ev.target.value); }}
             style={{ maxWidth: 240 }}
           >
-            {privacyOptions.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {privacyOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </HlControl>
         </FieldLine>
@@ -1347,24 +1435,54 @@ const PersonEditor = ({ person }) => {
     <Card className="mb-3">
       <Card.Header>Institutions</Card.Header>
       <Card.Body>
-        {insts.map((it, i) => (
-          <FieldLine
-            key={i}
-            label={labelForInst(it, i)}
-            ts={recordTs}
-            status={stringRowStatus(it, 'value')}
-            error={it._error}
-            onDismissError={() => updateInst(i, { _error: null })}
-            trail={<RemoveBtn onClick={() => removeStringArrayRow({ list: insts, setList: setInsts, remove: removeInst, field: 'institution', valueKey: 'value', i })} />}
-          >
-            <HlControl
-              value={it.value}
-              savedValue={it._savedValue}
-              onChange={(ev) => updateInst(i, { value: ev.target.value })}
-              onBlur={() => saveStringArray({ list: insts, setList: setInsts, field: 'institution', valueKey: 'value', i })}
-            />
-          </FieldLine>
-        ))}
+        {insts.map((it, i) => {
+          // Mirrors the Email section: created + old-since show only for a row
+          // that's old and has dates from the DB.
+          const showDates = showTimestamps && it.invalidated && !!(it._created || it._origOldDate);
+          const dateSlotBase = { ...tsStyle, flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+          return (
+            <FieldLine
+              key={i}
+              label={labelForInst(it, i)}
+              ts={metaLabel(it._by, it._ts)}
+              status={childStatus(it, instSnap)}
+              error={it._error}
+              onDismissError={() => updateInst(i, { _error: null })}
+              trail={<RemoveBtn onClick={() => deleteInst(i)} />}
+            >
+              <div style={inlineRow}>
+                <HlControl
+                  placeholder="institution"
+                  value={it.institution}
+                  savedValue={it._saved?.institution}
+                  onChange={(ev) => updateInst(i, { institution: ev.target.value })}
+                  onBlur={() => saveInst(i)}
+                  style={{ flex: '1 1 200px', minWidth: 200 }}
+                />
+                {showDates && (
+                  <span style={{ ...dateSlotBase, fontSize: '0.75em', width: 340 }}>
+                    {[
+                      it._created ? `created ${formatTimestamp(it._created)}` : null,
+                      it._origOldDate ? `old since ${formatTimestamp(it._origOldDate)}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+                <HlCheck
+                  type="checkbox"
+                  id={`person-institution-old-${i}`}
+                  label="mark as old"
+                  checked={it.invalidated}
+                  savedValue={it._saved?.invalidated}
+                  onChange={(ev) => {
+                    updateInst(i, { invalidated: ev.target.checked });
+                    saveInst(i, { invalidated: ev.target.checked });
+                  }}
+                  style={{ whiteSpace: 'nowrap' }}
+                />
+              </div>
+            </FieldLine>
+          );
+        })}
       </Card.Body>
     </Card>
   );
@@ -1497,30 +1615,38 @@ const PersonEditor = ({ person }) => {
       <Card.Header>Cross references</Card.Header>
       <Card.Body>
         {xrefs.map((x, i) => {
-          const prefixOptions =
-            XREF_PREFIXES.includes(x.curie_prefix) || !x.curie_prefix
-              ? XREF_PREFIXES
-              : [...XREF_PREFIXES, x.curie_prefix];
+          const prefix = normalizePrefix(x.curie_prefix, personXrefPatterns.prefixes);
+          const prefixOptions = prefix && !personXrefPatterns.prefixes.includes(prefix)
+            ? [...personXrefPatterns.prefixes, prefix]
+            : personXrefPatterns.prefixes;
+          const xrefRe = personXrefPatterns.regexFor(prefix);
+          const curieError = x.curie && xrefRe && !xrefRe.test(joinCurie(prefix, x.curie))
+            ? `Invalid ${prefix} — expected ${xrefRe.source}`
+            : null;
           return (
             <FieldLine
               key={i}
               label={labelForXref(x, i)}
               ts={metaLabel(x._by, x._ts)}
               status={childStatus(x, xrefSnap)}
-              error={x._error}
+              error={x._error || curieError}
               onDismissError={() => updateXref(i, { _error: null })}
               trail={<RemoveBtn onClick={() => deleteXref(i)} />}
             >
               <div style={inlineRow}>
                 <HlControl
                   as="select"
-                  value={x.curie_prefix}
-                  savedValue={x._saved?.curie_prefix}
+                  value={prefix}
+                  savedValue={normalizePrefix(x._saved?.curie_prefix, personXrefPatterns.prefixes)}
                   onChange={(ev) => updateXref(i, { curie_prefix: ev.target.value })}
                   onBlur={() => saveXref(i)}
                   style={{ maxWidth: 140 }}
                 >
-                  <option value="">prefix (required)</option>
+                  <option value="">
+                    {!personXrefPatterns.loading && personXrefPatterns.prefixes.length === 0
+                      ? 'prefix (unavailable — reload)'
+                      : 'prefix (required)'}
+                  </option>
                   {prefixOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
@@ -1555,7 +1681,7 @@ const PersonEditor = ({ person }) => {
 
   sectionRows.research_interest = (
     <Card className="mb-3">
-      <Card.Header>Research interest</Card.Header>
+      <Card.Header>Research interest (public)</Card.Header>
       <Card.Body>
         <FieldLine
           label="biography"
@@ -1577,34 +1703,40 @@ const PersonEditor = ({ person }) => {
     </Card>
   );
 
-  sectionRows.comments = (
+  const noteCard = (title, list, update, save, remove, labelFor, placeholder) => (
     <Card className="mb-3">
-      <Card.Header>Comments</Card.Header>
+      <Card.Header>{title}</Card.Header>
       <Card.Body>
-        {notes.map((n, i) => (
+        {list.map((n, i) => (
             <FieldLine
               key={i}
-              label={labelForNote(n, i)}
+              label={labelFor(n, i)}
               ts={metaLabel(n._by, n._ts)}
               status={childStatus(n, noteSnap)}
               error={n._error}
-              onDismissError={() => updateNote(i, { _error: null })}
-              trail={<RemoveBtn onClick={() => deleteNote(i)} />}
+              onDismissError={() => update(i, { _error: null })}
+              trail={<RemoveBtn onClick={() => remove(i)} />}
             >
               <HlControl
                 as="textarea"
                 rows={2}
-                placeholder="comment"
+                placeholder={placeholder}
                 value={n.note}
                 savedValue={n._saved?.note}
-                onChange={(ev) => updateNote(i, { note: ev.target.value })}
-                onBlur={() => saveNote(i)}
+                onChange={(ev) => update(i, { note: ev.target.value })}
+                onBlur={() => save(i)}
               />
             </FieldLine>
         ))}
       </Card.Body>
     </Card>
   );
+
+  sectionRows.public_notes = noteCard('Public notes', publicNotes, updatePublicNote, savePublicNote,
+    deletePublicNote, labelForPublicNote, 'public note');
+
+  sectionRows.comments = noteCard('Comments (internal)', notes, updateNote, saveNote,
+    deleteNote, labelForNote, 'comment');
 
   const lockedPill = {
     display: 'inline-flex',
@@ -1705,7 +1837,7 @@ const PersonEditor = ({ person }) => {
                   disabled={lineageBusy}
                 >
                   <option value=""></option>
-                  {relOptionsFor(e.relationship).map((o) => <option key={o} value={o}>{o}</option>)}
+                  {relOptionsFor(e.relationship).map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
                 </HlControl>
                 {side === 'object' ? lockedCell : otherPicker}
                 <LineageDateRange
@@ -1783,7 +1915,7 @@ const PersonEditor = ({ person }) => {
                   style={relSelectStyle}
                   disabled={lineageBusy}
                 >
-                  {relOptionsFor(e.relationship).map((o) => <option key={o} value={o}>{o}</option>)}
+                  {relOptionsFor(e.relationship).map((o) => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
                 </HlControl>
                 {objectCell}
                 <LineageDateRange
@@ -1856,7 +1988,7 @@ const PersonEditor = ({ person }) => {
             disabled={lineageBusy}
           >
             <option value=""></option>
-            {PERSON_PERSON_ROLES.map((o) => <option key={o} value={o}>{o}</option>)}
+            {relationshipVocab.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </HlControl>
           {newCanon.anchor === 'subject' ? (
             <div style={personSlot}>
@@ -1947,13 +2079,13 @@ const PersonEditor = ({ person }) => {
 
   const sectionsRender = grid ? (
     <div
-      className={`person-editor-grid${wideLayout ? ' person-editor-grid--wide' : ''}`}
-      style={{ '--person-col-floor': `${grid.colFloor}px` }}
+      className={`section-grid${wideLayout ? ' section-grid--wide' : ''}`}
+      style={{ '--section-col-floor': `${grid.colFloor}px` }}
     >
       {orderedIds.map((id) => (
         <div
           key={id}
-          className="person-editor-section"
+          className="section-grid__item"
           style={grid.styles[id] || { gridColumn: '1 / -1' }}
         >
           {sectionRows[id]}
@@ -1974,7 +2106,11 @@ const PersonEditor = ({ person }) => {
       </div>
 
       <div className="d-flex justify-content-end mb-3">
-        <PersonEditorLayoutModal
+        <SectionLayoutModal
+          sectionDefs={SECTION_DEFS}
+          defaultLayout={DEFAULT_LAYOUT}
+          componentName={PERSON_EDITOR_LAYOUT_COMPONENT_NAME}
+          pageLabel="Editor"
           onApplyPrefs={applyPrefs}
           current={{
             layout: activeLayout,
@@ -1982,6 +2118,7 @@ const PersonEditor = ({ person }) => {
             showTimestamps,
             showCurator,
           }}
+          defaultHidden={defaultHiddenSections(effectiveMod)}
           onToggleSection={toggleSection}
           onToggleTimestamps={setShowTimestamps}
           onToggleCurator={setShowCurator}

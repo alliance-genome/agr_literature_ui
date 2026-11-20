@@ -1,6 +1,7 @@
 // src/components/reports/ModelsTable.js
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import HelpDocLink, { HELP_DOC_URLS } from '../HelpDocLink';
 import {
   Spinner,
   Button,
@@ -101,6 +102,7 @@ const ITEMS_INIT = [
   { headerName: 'In Production', field: 'production', id: 9, checked: true },
   { headerName: 'Negated', field: 'negated', id: 10, checked: true },
   { headerName: 'Data Novelty', field: 'data_novelty_name', id: 11, checked: true },
+  { headerName: 'Data Context', field: 'data_context_name', id: 21, checked: true },
   { headerName: 'Dataset ID', field: 'dataset_id', id: 12, checked: true },
   { headerName: 'Species', field: 'species_name', id: 13, checked: true },
   { headerName: 'File Ext', field: 'file_extension', id: 14, checked: true },
@@ -225,6 +227,13 @@ const ModelsTable = ({ modSection }) => {
         filter: true,
         comparator: caseInsensitiveComparator,
         onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data?.data_novelty}`)
+      },
+      {
+        headerName: 'Data Context',
+        field: 'data_context_name',
+        filter: true,
+        comparator: caseInsensitiveComparator,
+        onCellClicked: (p) => handleCurieClick(`${p.value}:${p.data?.data_context}`)
       },
       { headerName: 'Dataset ID', field: 'dataset_id', filter: 'agNumberColumnFilter' },
       {
@@ -430,7 +439,7 @@ const ModelsTable = ({ modSection }) => {
       <Container fluid>
         <Row>
           <Col>
-            <h3 style={{ marginBottom: '30px' }}>Models</h3>
+            <h3 style={{ marginBottom: '30px' }}>Models <HelpDocLink url={HELP_DOC_URLS.models} title="Open the Models help documentation" /></h3>
           </Col>
         </Row>
 

@@ -17,14 +17,22 @@ export const searchMissingFiles = (mod_abbreviation) => {
 export const addWorkflowTag = (tag_id, mod_abbreviation, curie, accessToken) => {
   // accessToken parameter kept for backwards compatibility - auth handled by API client interceptor
   return dispatch => {
+    // a status change goes through the transition table (SCRUM-6845)
     const params = {
-      workflow_tag_id: tag_id,
+      curie_or_reference_id: curie,
       mod_abbreviation: mod_abbreviation,
-      reference_curie: curie
+      new_workflow_tag_atp_id: tag_id,
+      transition_type: 'manual'
     };
-    api.post('/workflow_tag/', params)
+    api.post('/workflow_tag/transition_to_workflow_status', params)
       .then(res => {
         dispatch(searchMissingFiles(mod_abbreviation));
+      })
+      .catch(error => {
+        // a move the transition table refuses (e.g. from an unexpected file upload status)
+        const detail = error.response?.data?.detail || error.message;
+        console.error('Workflow transition failed:', detail);
+        window.alert(`Could not change the file status of ${curie}: ${detail}`);
       });
   };
 };

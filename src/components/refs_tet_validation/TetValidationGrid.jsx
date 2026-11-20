@@ -17,6 +17,11 @@ import {
   groupTetsByTopicAndSource,
   sourceLabel,
   normalizeCurie,
+  VALIDATION_STATE_LABELS,
+  isAssessedByMod,
+  isCuratorMixedPositiveTet,
+  isCuratorValidationTet,
+  curatorMixedPositiveTets,
 } from './helpers/groupTets';
 import IdsCell from './cellRenderers/IdsCell';
 import TitleCell from './cellRenderers/TitleCell';
@@ -39,8 +44,10 @@ import { api } from '../../api';
 import {
   fetchTaxonData,
   getCuratorSourceId,
+  mergeTaxonNames,
   setTopicEntitySourceId,
 } from '../../actions/biblioActions';
+import { setGridPreferences } from '../../actions/searchActions';
 import {
   compareInnerColumnValues,
   innerColumnFilterValues,
@@ -62,12 +69,18 @@ const EMPTY_CELL_FILTER_FLAGS = Object.freeze({
 });
 
 const INNER_COLUMN_FILTER_LABELS = {
-  [INNER_COLUMN_TYPES.VALIDATION]: 'Assessment status',
+  [INNER_COLUMN_TYPES.VALIDATION]: 'Data assessment by biocurator',
   [INNER_COLUMN_TYPES.TAG]: 'Data',
   [INNER_COLUMN_TYPES.SOURCES]: 'Sources',
   [INNER_COLUMN_TYPES.CONF_SCORE]: 'Confidence score',
   [INNER_COLUMN_TYPES.CONF_LEVEL]: 'Confidence level',
   [INNER_COLUMN_TYPES.NOTE]: 'Note',
+};
+
+// Display labels for filter checkboxes whose raw values are internal keys. The
+// filter model keeps the raw values so saved models stay valid (SCRUM-6330).
+const INNER_COLUMN_FILTER_VALUE_LABELS = {
+  [INNER_COLUMN_TYPES.VALIDATION]: VALIDATION_STATE_LABELS,
 };
 
 function modelsEqual(a, b) {
@@ -110,6 +123,20 @@ const ID_COLUMN_MIN_WIDTH = 200;
 const ID_COLUMN_CHAR_WIDTH = 8.5;
 const ID_COLUMN_PADDING = 42;
 
+// Cap how wide autoSizeColumns may grow a Sources column. Ellipsis clips
+// painting, not intrinsic width, so a long (unmapped-code) ontology label
+// would otherwise let autosize stretch the column arbitrarily. We clamp the
+// autosize result (below) rather than setting a colDef maxWidth, so the
+// fill-remaining-space pass and manual column resizing stay unconstrained.
+const SOURCES_AUTOSIZE_CAP = 260;
+
+// Same idea for the biocurator assessment column: autosize measures header
+// text unwrapped on one line, so "Data assessment by biocurator" would widen
+// every topic group far past what the narrow Y / N / conflict pill needs. This
+// was a colDef maxWidth, which also stopped curators dragging the column wider
+// (SCRUM-6330) — clamping the autosize result instead leaves resizing free.
+const VALIDATION_AUTOSIZE_CAP = 150;
+
 const prefixOf = (curie) =>
   curie ? String(curie).split(':')[0].toUpperCase() : null;
 
@@ -142,6 +169,32 @@ function estimateIdsColumnWidth(rows, selectedPrefixes) {
     ID_COLUMN_MIN_WIDTH,
     Math.ceil(longestIdLength * ID_COLUMN_CHAR_WIDTH + ID_COLUMN_PADDING)
   );
+}
+
+// Clamp autosized columns that grew past their cap. Done via setColumnWidths,
+// not a colDef maxWidth, so the fill-extra pass can still expand these columns
+// to absorb blank space and a curator can still drag the border wider. Sources
+// columns have colId === topic curie (no `__suffix`); the biocurator assessment
+// column is `<curie>__val`.
+function autosizeCapFor(colId) {
+  if (!colId) return null;
+  if (!colId.includes('__')) return SOURCES_AUTOSIZE_CAP;
+  if (colId.endsWith('__val')) return VALIDATION_AUTOSIZE_CAP;
+  return null;
+}
+
+function clampAutosizedColumns(api, cols) {
+  const overCap = (cols || [])
+    .map((c) => {
+      const cid = c?.getColId?.() || '';
+      const cap = autosizeCapFor(cid);
+      if (cap === null) return null;
+      return (c.getActualWidth?.() || 0) > cap
+        ? { key: cid, newWidth: cap }
+        : null;
+    })
+    .filter(Boolean);
+  if (overCap.length > 0) api.setColumnWidths?.(overCap, false);
 }
 
 // useState whose value is mirrored into an external store object so it survives
@@ -201,6 +254,7 @@ export default function TetValidationGrid({
   const testerMod = useSelector((s) => s.isLogged.testerMod);
   const accessLevel = testerMod !== 'No' ? testerMod : cognitoMod;
   const accessToken = useSelector((s) => s.isLogged.accessToken);
+  const curieToNameTaxon = useSelector((s) => s.biblio.curieToNameTaxon);
   const [curationStatusOptions, setCurationStatusOptions] = useState([]);
   const [curationTagOptions, setCurationTagOptions] = useState([]);
 
@@ -240,9 +294,9 @@ export default function TetValidationGrid({
     };
   }, []);
 
-  const topicEntitySourceId = useSelector(
-    (s) => s.biblio.topicEntitySourceId
-  );
+  // No selector for topicEntitySourceId here: this component only WRITES the
+  // shared slot (the effect below). CellValidationStrip and BulkValidationModal
+  // read it from redux themselves.
   const effectiveMod = mod || accessLevel;
 
   const {
@@ -327,14 +381,30 @@ export default function TetValidationGrid({
   );
 
   // Ensure curator source id is loaded so the validation strip can submit
+  // SCRUM-6518. Resolve the ABC curator source so every curation status write
+  // can be attributed.
+  //
+  // Deliberately NOT guarded on an already-resolved id: effectiveMod follows accessLevel, which follows
+  // testerMod, which DevToolsDropdown switches at runtime with no reload, so a
+  // guard would keep the previous MOD's id in the shared redux slot and stamp
+  // it onto the new MOD's edits.
+  //
+  // Removing that guard opens three races, all closed here: the slot is
+  // cleared synchronously so a write during the in-flight window is
+  // UNATTRIBUTED rather than attributed to the previous MOD (a wrong
+  // tag_source_id is worse than an absent one); `cancelled` stops an
+  // out-of-order response from two rapid MOD switches landing last; and the
+  // accessToken guard keeps a pre-auth mount from resolving to undefined.
   useEffect(() => {
-    if (effectiveMod && accessToken && !topicEntitySourceId) {
-      (async () => {
-        const id = await getCuratorSourceId(effectiveMod, accessToken);
-        dispatch(setTopicEntitySourceId(id));
-      })();
-    }
-  }, [effectiveMod, accessToken, topicEntitySourceId, dispatch]);
+    if (!effectiveMod || !accessToken) return;
+    let cancelled = false;
+    dispatch(setTopicEntitySourceId(undefined));
+    (async () => {
+      const id = await getCuratorSourceId(effectiveMod);
+      if (!cancelled) dispatch(setTopicEntitySourceId(id));
+    })();
+    return () => { cancelled = true; };
+  }, [effectiveMod, accessToken, dispatch]);
 
   // Load taxon data once — the validation cell shows a species badge per TET
   // and the validation modals seed a default species from the MOD-to-taxon
@@ -342,6 +412,59 @@ export default function TetValidationGrid({
   useEffect(() => {
     dispatch(fetchTaxonData());
   }, [dispatch]);
+
+  // Resolve names for species on curator assessments that the taxon data above
+  // doesn't cover (it only holds each MOD's own taxa + human), so a curator who
+  // picked e.g. a genus gets a lettered badge instead of '?'. Waits for the
+  // taxon data so FETCH_TAXON_DATA_SUCCESS can't overwrite the merged names.
+  // Each curie is tried once per mount, found or not, so a species the API
+  // can't name isn't re-requested on every row update. Results are merged even
+  // if rows change mid-flight: a curie marked tried must not lose its name, and
+  // the names live in the shared redux store, not this effect.
+  const triedSpeciesRef = useRef(new Set());
+  useEffect(() => {
+    if (!curieToNameTaxon) return;
+    const seen = new Set();
+    for (const r of rows) {
+      for (const t of r.tets || []) {
+        if (
+          t.species &&
+          (isCuratorValidationTet(t) || isCuratorMixedPositiveTet(t))
+        ) {
+          seen.add(t.species);
+        }
+      }
+      for (const cell of Object.values(r.validation || {})) {
+        for (const g of cell?.by_curator || []) {
+          for (const sp of g?.species || []) if (sp) seen.add(sp);
+        }
+      }
+    }
+    const missing = [...seen].filter(
+      (c) => !curieToNameTaxon[c] && !triedSpeciesRef.current.has(c)
+    );
+    if (missing.length === 0) return;
+    missing.forEach((c) => triedSpeciesRef.current.add(c));
+    Promise.all(
+      missing.map(async (curie) => {
+        try {
+          const r = await api.get(
+            `/ontology/map_curie_to_name/species/${curie}`
+          );
+          // The endpoint echoes the curie back when it has no name for it.
+          const name = typeof r.data === 'string' ? r.data : '';
+          return name && name.toUpperCase() !== curie.toUpperCase()
+            ? [curie, name]
+            : null;
+        } catch {
+          return null;
+        }
+      })
+    ).then((entries) => {
+      const found = entries.filter(Boolean);
+      if (found.length > 0) dispatch(mergeTaxonNames(Object.fromEntries(found)));
+    });
+  }, [rows, curieToNameTaxon, dispatch]);
 
   const [topicNameMap, setTopicNameMap] = useState({});
 
@@ -441,7 +564,7 @@ export default function TetValidationGrid({
           if (label) s.add(label);
         });
       } else {
-        for (const t of r.tets || []) s.add(sourceLabel(t.topic_entity_tag_source));
+        for (const t of r.tets || []) s.add(sourceLabel(t.tag_source));
       }
     }
     return [...s].sort();
@@ -497,6 +620,31 @@ export default function TetValidationGrid({
     'selectedIdPrefixes',
     null
   );
+  // User column arrangement: [{ colId, width }] in display order, captured when
+  // the curator drags a column (or sub-column) or resizes one. While set, it is
+  // applied instead of the autosize passes so a hand-tuned layout survives
+  // remounts, and it is mirrored into Redux so Save Current Search persists it.
+  // null = the curator hasn't arranged columns; autosize behaves as before.
+  //
+  // The value lives in BOTH state and a ref: the state drives the Redux mirror
+  // and the toolbar's reset affordance, while the apply/layout callbacks read
+  // the ref so their identity stays stable — otherwise every user resize
+  // (which captures new state) would re-trigger the scheduled layout passes,
+  // flashing the resize overlay and snapping a mid-drag column back to the
+  // previous snapshot (PR #644 review).
+  const [columnState, setColumnStateRaw] = usePersistentState(
+    persistStore,
+    'columnState',
+    null
+  );
+  const columnStateRef = useRef(columnState);
+  const setColumnState = useCallback((next) => {
+    // Preserve the useState contract: support functional updates, resolved
+    // against the ref (which always holds the latest value).
+    const value = typeof next === 'function' ? next(columnStateRef.current) : next;
+    columnStateRef.current = value;
+    setColumnStateRaw(value);
+  }, [setColumnStateRaw]);
   // True while the autosize/fill-extra passes are running. Used to render a
   // light overlay so the curator knows the layout is still adjusting and
   // mid-resize column widths aren't a bug.
@@ -667,6 +815,7 @@ export default function TetValidationGrid({
     const colIds = cols.map((c) => c.getColId?.()).filter(Boolean);
     if (colIds.length === 0) return;
     gridApi.autoSizeColumns?.(colIds, false);
+    clampAutosizedColumns(gridApi, cols);
     requestAnimationFrame(() => {
       const wrapper = topScrollRef.current?.closest('.tetv-grid-wrapper');
       const viewport = wrapper?.querySelector('.ag-center-cols-viewport');
@@ -693,6 +842,75 @@ export default function TetValidationGrid({
     });
   }, [gridApi]);
 
+  // Re-impose the curator's saved column order + widths. Returns false when
+  // there is no saved arrangement (caller then autosizes).
+  //
+  // applyOrder is only safe when the saved state covers EVERY current column:
+  // AG Grid's sortColsLikeKeys appends any column absent from the state array
+  // after all matched ones, which would rip a newly-appeared column (a conf
+  // score/level sub-column just toggled on, or a topic from a new search) out
+  // of its topic group and render a duplicate group header (PR #644 review).
+  // With partial coverage we overlay the saved widths only — maintainColumnOrder
+  // has already slotted new columns next to their group siblings — and autosize
+  // the columns the saved layout doesn't know about so they don't sit at raw
+  // colDef widths.
+  const applySavedColumnState = useCallback(() => {
+    const saved = columnStateRef.current;
+    if (!gridApi || !Array.isArray(saved) || saved.length === 0) {
+      return false;
+    }
+    const savedIds = new Set(saved.map((c) => c.colId));
+    const current = gridApi.getColumnState?.() || [];
+    const unknown = current.filter((c) => c.colId && !savedIds.has(c.colId));
+    if (unknown.length === 0) {
+      gridApi.applyColumnState?.({
+        state: saved.map(({ colId, width }) => ({ colId, width })),
+        applyOrder: true,
+      });
+    } else {
+      const currentIds = new Set(current.map((c) => c.colId));
+      gridApi.applyColumnState?.({
+        state: saved
+          .filter((c) => currentIds.has(c.colId))
+          .map(({ colId, width }) => ({ colId, width })),
+        applyOrder: false,
+      });
+      const unknownIds = unknown.map((c) => c.colId);
+      gridApi.autoSizeColumns?.(unknownIds, false);
+      // Same caps as the full autosize pass, so a fresh Sources/assessment
+      // column can't balloon past its limit just because it wasn't in the
+      // saved layout (PR #644 review).
+      clampAutosizedColumns(
+        gridApi,
+        unknownIds.map((id) => gridApi.getColumn?.(id)).filter(Boolean)
+      );
+    }
+    return true;
+  }, [gridApi]);
+
+  // Single layout entry point: a hand-arranged (or settings-restored) column
+  // state takes precedence over the autosize passes — otherwise every remount
+  // and data refresh would wipe the curator's widths. Reads the ref, so its
+  // identity is stable across columnState captures and the layout effect below
+  // does not re-fire on the user's own resizes.
+  const layoutColumns = useCallback(() => {
+    if (!applySavedColumnState()) {
+      autoSizeAndFill();
+    }
+  }, [applySavedColumnState, autoSizeAndFill]);
+
+  // Capture the arrangement after a user-driven move or resize. Programmatic
+  // sources (autosizeColumns, api/applyColumnState, flex) are ignored so the
+  // autosize passes never freeze themselves into a "user" layout.
+  const captureColumnState = useCallback(
+    (api) => {
+      const cols = api?.getColumnState?.() || [];
+      const next = cols.map(({ colId, width }) => ({ colId, width }));
+      if (next.length > 0) setColumnState(next);
+    },
+    [setColumnState]
+  );
+
   useEffect(() => {
     if (!gridApi || rows.length === 0) return undefined;
     let cancelled = false;
@@ -711,13 +929,13 @@ export default function TetValidationGrid({
           if (cancelled) return;
           handles.t1 = setTimeout(() => {
             if (cancelled) return;
-            autoSizeAndFill();
+            layoutColumns();
             // Second pass — after the first autoSize has flushed and any
             // dependent layout has settled, re-run to catch columns whose
             // cells finished rendering after the first pass.
             handles.t2 = setTimeout(() => {
               if (cancelled) return;
-              autoSizeAndFill();
+              layoutColumns();
               setIsResizing(false);
             }, 200);
           }, baseWait);
@@ -744,17 +962,18 @@ export default function TetValidationGrid({
     // this dep the Sources fill-extra pass would never recalculate after
     // the user adds/removes prefixes, leaving topic columns mis-sized.
     selectedIdPrefixes,
-    autoSizeAndFill,
+    layoutColumns,
   ]);
 
   // Toggling fullscreen changes the available viewport width, so the
   // Sources fill-extra pass needs to recompute. Re-run autosize on the
-  // next frame after the layout has switched.
+  // next frame after the layout has switched. (With a user-arranged column
+  // state, layoutColumns re-applies the saved widths instead.)
   useEffect(() => {
     if (!gridApi) return undefined;
     setIsResizing(true);
     const id = requestAnimationFrame(() => {
-      autoSizeAndFill();
+      layoutColumns();
       requestAnimationFrame(() => setIsResizing(false));
     });
     return () => cancelAnimationFrame(id);
@@ -914,6 +1133,92 @@ export default function TetValidationGrid({
     userTouchedHiddenRef.current = true;
     setHiddenTopicCuries(next);
   }, [setHiddenTopicCuries, userTouchedHiddenRef]);
+
+  // ---- Grid preferences save/restore (SCRUM: grid options in saved settings) ----
+  //
+  // Restore: when a saved search carries grid preferences, the settings loader
+  // dispatches applyGridPreferences, which bumps gridPreferencesApplied.nonce.
+  // Applying by nonce (persisted across remounts) means each restore lands
+  // exactly once, whether the grid was mounted at load time or mounts later.
+  const gridPreferencesApplied = useSelector(
+    (s) => s.search.gridPreferencesApplied
+  );
+  const lastAppliedPrefsNonceRef = usePersistentRef(
+    persistStore,
+    'lastAppliedPrefsNonce',
+    0
+  );
+  useEffect(() => {
+    if (!gridPreferencesApplied) return;
+    const { prefs, nonce } = gridPreferencesApplied;
+    if (!prefs || nonce === lastAppliedPrefsNonceRef.current) return;
+    lastAppliedPrefsNonceRef.current = nonce;
+    if (prefs.displayOptions) {
+      setDisplayOptions((prev) => ({ ...prev, ...prefs.displayOptions }));
+    }
+    if (Array.isArray(prefs.hiddenTopicCuries)) {
+      // Mark the restored topic visibility as a deliberate choice, and seed the
+      // topics key it was saved under, so the facet-default effect above doesn't
+      // clobber it when the restored search's topics prop arrives.
+      userTouchedHiddenRef.current = true;
+      if (typeof prefs.topicsKey === 'string') {
+        lastTopicsKeyRef.current = prefs.topicsKey;
+      }
+      setHiddenTopicCuries(new Set(prefs.hiddenTopicCuries));
+    }
+    if (prefs.sourceFilterModel !== undefined) {
+      setSourceFilterModel(prefs.sourceFilterModel);
+    }
+    // Symmetric with save: a search saved on automatic sizing restores to
+    // automatic sizing, clearing any interim hand-arranged layout (PR #644
+    // review) — not just overwriting when the saved search carries one.
+    setColumnState(
+      Array.isArray(prefs.columnState) && prefs.columnState.length > 0
+        ? prefs.columnState
+        : null
+    );
+    // If the grid is already live, re-impose the restored layout (or drop back
+    // to autosize) now — the scheduled layout effect reads a stable callback
+    // and won't re-fire just because columnState changed.
+    if (gridApi) {
+      setIsResizing(true);
+      requestAnimationFrame(() => {
+        layoutColumns();
+        requestAnimationFrame(() => setIsResizing(false));
+      });
+    }
+  }, [
+    gridPreferencesApplied,
+    lastAppliedPrefsNonceRef,
+    lastTopicsKeyRef,
+    userTouchedHiddenRef,
+    setDisplayOptions,
+    setHiddenTopicCuries,
+    setSourceFilterModel,
+    setColumnState,
+    gridApi,
+    layoutColumns,
+  ]);
+
+  // Save: mirror every savable grid option into Redux so Save Current Search
+  // (SearchPreferencesUtils.buildSearchSettingsState) captures the arrangement —
+  // toolbar checkboxes, topic/source visibility, and column order + widths.
+  useEffect(() => {
+    dispatch(setGridPreferences({
+      displayOptions,
+      hiddenTopicCuries: [...hiddenTopicCuries].sort(),
+      sourceFilterModel,
+      columnState,
+      topicsKey: lastTopicsKeyRef.current,
+    }));
+  }, [
+    dispatch,
+    displayOptions,
+    hiddenTopicCuries,
+    sourceFilterModel,
+    columnState,
+    lastTopicsKeyRef,
+  ]);
 
   const visibleTopicColumns = useMemo(
     () => topicColumns.filter((t) => !hiddenTopicCuries.has(t.curie)),
@@ -1273,9 +1578,11 @@ export default function TetValidationGrid({
     const idsCol = {
       headerName: 'IDs',
       headerComponent: HeaderWithHelp,
-      headerComponentParams: { showFilterIcon: true },
-      headerTooltip:
-        'Reference identifiers — the canonical AGRKB curie plus every cross-reference (PMID, MOD curies, DOI, …) and the publication year. Click the filter icon in the header to filter by prefix.',
+      headerComponentParams: {
+        showFilterIcon: true,
+        help:
+          'Reference identifiers — the canonical AGRKB curie plus every cross-reference (PMID, MOD curies, DOI, …) and the publication year. Click the filter icon in the header to filter by prefix.',
+      },
       field: '__ids',
       pinned: 'left',
       width: idsColumnWidth,
@@ -1297,8 +1604,10 @@ export default function TetValidationGrid({
     const titleCol = {
       headerName: 'Title',
       headerComponent: HeaderWithHelp,
-      headerTooltip:
-        'Publication title (links to the Biblio page) with journal name and authors.',
+      headerComponentParams: {
+        help:
+          'Publication title (links to the Biblio page) with journal name and authors.',
+      },
       field: '__title',
       pinned: 'left',
       width: 320,
@@ -1331,28 +1640,36 @@ export default function TetValidationGrid({
         const topicField = `__topic_${t.curie}`;
         const makeInnerColumn = ({
           headerName,
-          headerTooltip,
+          help,
           colId,
           kind,
           width,
           minWidth,
+          maxWidth,
           cellRenderer,
           cellRendererParams = {},
           cellClass = '',
         }) => ({
           headerName,
-          headerTooltip,
           headerComponent: HeaderWithHelp,
+          headerComponentParams: { help },
           colId,
           field: topicField,
           width,
           minWidth,
+          maxWidth,
           autoHeight: true,
+          // Sub-header labels are full phrases ("Data assessment by
+          // biocurator"), so let them wrap over the column width instead of
+          // being clipped, and grow the sub-header row to fit the tallest one.
+          wrapHeaderText: true,
+          autoHeaderHeight: true,
           sortable: true,
           filter: InnerValueFilter,
           filterParams: {
             availableValues: innerFilterOptions[kind] || [],
             filterLabel: INNER_COLUMN_FILTER_LABELS[kind],
+            valueLabels: INNER_COLUMN_FILTER_VALUE_LABELS[kind],
             innerFieldType: kind,
             sourceFilterModel,
           },
@@ -1368,31 +1685,33 @@ export default function TetValidationGrid({
           headerClass: 'tetv-topic-subheader',
           cellRendererParams,
         });
-        const children = [
-          makeInnerColumn({
-            headerName: 'Assessment by Biocurator',
-            headerTooltip:
-              'Assessment by Biocurator. When at least one curator has submitted a topic-level tag, the cell shows the assessment status (positive / negative / assessment conflict). Otherwise, ✓ and ✗ buttons let the curator submit one.',
-            colId: `${t.curie}__val`,
-            kind: INNER_COLUMN_TYPES.VALIDATION,
-            width: 90,
-            minWidth: 80,
-            wrapHeaderText: true,
-            autoHeaderHeight: true,
-            cellRenderer: ValidationCell,
-            cellClass: leftmostClass,
-            cellRendererParams: {
-              topicCurie: t.curie,
-              topicName: t.name || t.curie,
-              onValidated: handleValidated,
-              curationStatusOptions,
-              curationTagOptions,
-            },
-          }),
+        // The biocurator assessment stands alone; every other sub-column is
+        // driven by `buildEntries`, which excludes curator-submitted tags, so
+        // they all describe the same thing — what the non-biocurator sources
+        // said — and sit under one sub-group header (SCRUM-6330).
+        const validationChild = makeInnerColumn({
+          headerName: 'Data assessment by biocurator',
+          help:
+            'Data assessment by biocurator. When at least one curator has submitted a topic-level tag, the cell shows a Y pill (data present for this topic) and/or an N pill (no data), each listing the MODs that gave that answer — your MOD in bold. A curator\'s positive tag on the topic with an entity (e.g. gene expression for a gene, experimentally studied data) also counts as a Y for their MOD, marked "entity tags". Assessments are per MOD: a dashed, muted pill is another MOD\'s assessment, not yours, and "conflict" marks curators of the same MOD disagreeing. Until a curator from your MOD has submitted one, ✓ and ✗ buttons let you submit it. Y / N here mean the same thing as under "Data assessment by other sources" and as the has_data facet in advanced search.',
+          colId: `${t.curie}__val`,
+          kind: INNER_COLUMN_TYPES.VALIDATION,
+          width: 90,
+          minWidth: 80,
+          cellRenderer: ValidationCell,
+          cellClass: leftmostClass,
+          cellRendererParams: {
+            topicCurie: t.curie,
+            topicName: t.name || t.curie,
+            onValidated: handleValidated,
+            curationStatusOptions,
+            curationTagOptions,
+          },
+        });
+        const otherSourceChildren = [
           makeInnerColumn({
             headerName: 'Sources',
-            headerTooltip:
-              'Source pipelines that produced TET tags for this topic on this reference (e.g. textpresso, manual, abc_entity_extractor). The cell only lists the source labels — the actual Y / N / {N}E breakdown is shown in the adjacent Tag column.',
+            help:
+              'Source pipelines that produced TET tags for this topic on this reference (e.g. textpresso, manual, abc_entity_extractor). The cell only lists the source labels — each one\'s Y / N / {N}E assessment is on the matching row of the adjacent Data column.',
             colId: t.curie,
             kind: INNER_COLUMN_TYPES.SOURCES,
             width: 180,
@@ -1404,8 +1723,8 @@ export default function TetValidationGrid({
           }),
           makeInnerColumn({
             headerName: 'Data',
-            headerTooltip:
-              'Per-source TET data pills for this topic. Y (green) = topic-level positive tag; N (red) = topic-level negated tag; "{N}E" (violet) = an entity-level extraction with N entities (click the badge to see the full list of entities). Each row aligns with the matching source label in the Sources column to its left.',
+            help:
+              'Per-source TET data pills for this topic. Y (green) = topic-level tag, data present; N (red) = topic-level negated tag, no data; "{N}E" (violet) = an entity-level extraction with N entities (click the badge to see the full list of entities). Each row aligns with the matching source label in the Sources column to its left.',
             colId: `${t.curie}__tag`,
             kind: INNER_COLUMN_TYPES.TAG,
             width: 58,
@@ -1418,9 +1737,9 @@ export default function TetValidationGrid({
           }),
         ];
         if (displayOptions.showScore) {
-          children.push(makeInnerColumn({
+          otherSourceChildren.push(makeInnerColumn({
             headerName: 'conf sc',
-            headerTooltip:
+            help:
               'Confidence score (0.00 – 1.00) of the TET tag, when reported by the source pipeline. For entity-level buckets, the cell shows the min – max range across that bucket.',
             colId: `${t.curie}__cs`,
             kind: INNER_COLUMN_TYPES.CONF_SCORE,
@@ -1431,9 +1750,9 @@ export default function TetValidationGrid({
           }));
         }
         if (displayOptions.showLevel) {
-          children.push(makeInnerColumn({
+          otherSourceChildren.push(makeInnerColumn({
             headerName: 'conf lvl',
-            headerTooltip:
+            help:
               'Confidence level label (e.g. high / medium / low) of the TET tag, when reported by the source pipeline. For entity-level buckets, the cell shows the count of distinct levels if they vary.',
             colId: `${t.curie}__cl`,
             kind: INNER_COLUMN_TYPES.CONF_LEVEL,
@@ -1443,9 +1762,9 @@ export default function TetValidationGrid({
             cellRendererParams: { sourceFilterModel },
           }));
         }
-        children.push(makeInnerColumn({
+        otherSourceChildren.push(makeInnerColumn({
           headerName: 'note',
-          headerTooltip:
+          help:
             'Free-text notes attached to TET tags. Click the 📝 icon for the full note in a modal; toggle "Expand notes" in the toolbar to render note text inline.',
           colId: `${t.curie}__note`,
           kind: INNER_COLUMN_TYPES.NOTE,
@@ -1457,12 +1776,29 @@ export default function TetValidationGrid({
             sourceFilterModel,
           },
         }));
+        const otherSourcesGroupHelp =
+          'Data assessment by the non-biocurator sources that produced TET tags for this topic on this reference (e.g. textpresso, abc_entity_extractor). Each sub-column iterates the same per-source rows in lockstep: the source label, its Y / N / {N}E assessment, and — when toggled on in the toolbar — its confidence and notes.';
+        const children = [
+          validationChild,
+          {
+            headerName: 'Data assessment by other sources',
+            headerGroupComponent: HeaderGroupWithHelp,
+            headerGroupComponentParams: { help: otherSourcesGroupHelp },
+            groupId: `tg-${t.curie}-other`,
+            marryChildren: true,
+            wrapHeaderText: true,
+            autoHeaderHeight: true,
+            headerClass: 'tetv-topic-subgroup-header',
+            children: otherSourceChildren,
+          },
+        ];
+        const topicGroupHelp =
+          `Topic "${t.name || t.curie}" (${t.curie}) — a topic from the MOD's ATP subset. ` +
+          'Sub-columns split into the data assessment by biocurator and the data assessment by other sources (source label, Y / N / {N}E tag, and optionally confidence and notes) for this topic on each reference.';
         return {
           headerName: t.name || t.curie,
           headerGroupComponent: HeaderGroupWithHelp,
-          headerTooltip:
-            `Topic "${t.name || t.curie}" (${t.curie}) — a topic from the MOD's ATP subset. ` +
-            'Sub-columns show the assessment status, per-source TET data, a compact tag summary, and (optionally) confidence and notes for this topic on each reference.',
+          headerGroupComponentParams: { help: topicGroupHelp },
           groupId: `tg-${t.curie}`,
           marryChildren: true,
           // Allow long topic names to wrap inside the group header instead of
@@ -1506,18 +1842,6 @@ export default function TetValidationGrid({
       }`}
       style={{ width: '100%' }}
     >
-      <button
-        type="button"
-        className="tetv-fullscreen-toggle"
-        onClick={() => setIsFullscreen((v) => !v)}
-        title={
-          isFullscreen
-            ? 'Exit fullscreen (Esc)'
-            : 'Expand grid to fullscreen'
-        }
-      >
-        {isFullscreen ? '⤡ Exit fullscreen' : '⤢ Fullscreen'}
-      </button>
       {unresolved.length > 0 && (
         <div className="tetv-banner-unresolved">
           Could not resolve {unresolved.length} ID(s):{' '}
@@ -1533,6 +1857,18 @@ export default function TetValidationGrid({
         allSources={allSources}
         sourceFilterModel={sourceFilterModel}
         setSourceFilterModel={setSourceFilterModel}
+        hasCustomColumnLayout={Array.isArray(columnState) && columnState.length > 0}
+        onResetColumnLayout={() => {
+          // Back to automatic sizing: clear the arrangement and rerun autosize.
+          setColumnState(null);
+          setIsResizing(true);
+          requestAnimationFrame(() => {
+            autoSizeAndFill();
+            requestAnimationFrame(() => setIsResizing(false));
+          });
+        }}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={() => setIsFullscreen((v) => !v)}
       />
       <BulkActionBar
         selectedCount={selectedRefCuries.size}
@@ -1613,16 +1949,35 @@ export default function TetValidationGrid({
             setSelectedRefCuries(next);
           }}
           onGridReady={onGridReady}
+          // Keep the curator's drag order when columnDefs are rebuilt (toolbar
+          // toggles, topic visibility changes) instead of resetting to the
+          // definition order.
+          maintainColumnOrder
+          onColumnMoved={(e) => {
+            // Only completed, user-driven drags; AgGrid fires interim events
+            // while the column is still being dragged.
+            if (e.finished && e.source === 'uiColumnMoved') {
+              captureColumnState(e.api);
+            }
+          }}
+          onColumnResized={(e) => {
+            // Only user drag-resizes: autosizeColumns / api sources would
+            // otherwise freeze the automatic layout into a "user" arrangement.
+            if (e.finished && e.source === 'uiColumnResized') {
+              captureColumnState(e.api);
+            }
+          }}
           onFirstDataRendered={() => {
             // AgGrid signals first paint complete — run autosize on the
             // next frame so we measure cells that are now in the DOM.
             // With ~50 rows this is the only reliable signal that all
             // cells have laid out; the row-count-scaled fallback in the
             // useEffect above still runs as a safety net. We keep the
-            // resizing overlay on until autosize has flushed.
+            // resizing overlay on until autosize has flushed. A saved
+            // column arrangement is applied instead of autosize.
             setIsResizing(true);
             requestAnimationFrame(() => {
-              autoSizeAndFill();
+              layoutColumns();
               requestAnimationFrame(() => setIsResizing(false));
             });
           }}
@@ -1638,7 +1993,8 @@ export default function TetValidationGrid({
               if (hiddenTopicCuries.has(t.curie)) continue;
               const tets = p.data[`__topic_${t.curie}`];
               if (
-                professionalBiocuratorTopicTets(tets).length > 0
+                professionalBiocuratorTopicTets(tets).length > 0 ||
+                curatorMixedPositiveTets(tets).length > 0
               ) {
                 return 'tetv-row-validated';
               }
@@ -1664,8 +2020,9 @@ export default function TetValidationGrid({
               const tets = row?.[topicField] || [];
               return {
                 curie,
-                alreadyValidated:
-                  professionalBiocuratorTopicTets(tets).length > 0,
+                // Per MOD (SCRUM-6256): only this curator's MOD's own
+                // assessment makes a reference skip the bulk submit.
+                alreadyValidated: isAssessedByMod(tets, accessLevel),
               };
             });
           })()}

@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Form } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCompress, faExpand } from '@fortawesome/free-solid-svg-icons';
 import Select, { components as selectComponents } from 'react-select';
 
 const compactSelectStyles = {
@@ -121,6 +123,10 @@ export default function TetGridToolbar({
   allSources,
   sourceFilterModel,
   setSourceFilterModel,
+  hasCustomColumnLayout = false,
+  onResetColumnLayout,
+  isFullscreen = false,
+  onToggleFullscreen,
 }) {
   // Topics multi-select state — selected = currently visible (NOT hidden)
   const topicOptions = useMemo(
@@ -208,6 +214,16 @@ export default function TetGridToolbar({
             })
           }
         />
+        {hasCustomColumnLayout && onResetColumnLayout && (
+          <button
+            type="button"
+            className="tetv-multiselect-action"
+            title="Discard the custom column order/widths and return to automatic sizing"
+            onClick={onResetColumnLayout}
+          >
+            Reset column layout
+          </button>
+        )}
       </span>
 
       <span className="tetv-toolbar-group tetv-toolbar-select">
@@ -241,6 +257,23 @@ export default function TetGridToolbar({
           />
         </div>
       </span>
+
+      {onToggleFullscreen && (
+        // Same toggle as the author reorder Expand/Shrink: labelled because
+        // the icon alone can't say which way it points; the label names the
+        // destination, not the current state.
+        <span className="tetv-toolbar-group tetv-toolbar-view">
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            title={isFullscreen ? 'Show in the page (Esc)' : 'Expand the grid to the full page'}
+            onClick={onToggleFullscreen}
+          >
+            <FontAwesomeIcon icon={isFullscreen ? faCompress : faExpand} />
+            {' '}{isFullscreen ? 'Shrink' : 'Expand'}
+          </Button>
+        </span>
+      )}
     </div>
   );
 }

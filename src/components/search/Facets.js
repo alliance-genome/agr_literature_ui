@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import { api } from "../../api";
 import {
@@ -27,14 +27,12 @@ import Form from 'react-bootstrap/Form';
 import {Badge, Button, Collapse, ButtonGroup, OverlayTrigger, Tooltip} from 'react-bootstrap';
 import {IoIosArrowDroprightCircle, IoIosArrowDropdownCircle} from 'react-icons/io';
 import {INITIAL_FACETS_LIMIT} from '../../reducers/searchReducer';
+import {compileAdvancedQuery} from './advanced/advancedQueryModel';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import InputGroup from 'react-bootstrap/InputGroup';
 import _ from "lodash";
-import DateRangePicker from '@wojtekmaj/react-daterange-picker'
-import '@wojtekmaj/react-daterange-picker/dist/DateRangePicker.css';
-import 'react-calendar/dist/Calendar.css';
 import LoadingOverlay from "../LoadingOverlay";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheckSquare, faMinusSquare} from "@fortawesome/free-solid-svg-icons";
@@ -66,6 +64,7 @@ export const RENAME_FACETS = {
     "authors.name.keyword": "Authors",
     "mod_reference_types.keyword": "MOD reference type",
     "retraction_status.keyword": "Retraction Status",
+    "resource_id.keyword": "Journal / Resource",
     "can_display_image": "Image permission",
     "has_image": "Has images",
     "topics": "Topic",
@@ -73,17 +72,20 @@ export const RENAME_FACETS = {
     "source_methods": "Source method",
     "source_evidence_assertions": "Source evidence assertion",
     "data_novelty": "Data Novelty",
+    "data_context": "Data Context",
+    "large_scale_tag": "Large-scale data",
     "file_workflow": "File workflow",
     "reference_classification": "Reference classification",
     "entity_extraction": "Entity extraction",
     "manual_indexing": "Manual indexing",
     "curation_classification": "Curation classification",
+    "abstract_classification": "Abstract classification",
     "community_curation": "Community curation",
     "first_pass_curation": "First pass curation",
     "email_extraction": "Email extraction",
+    "author_workflow": "Author",
     "predicted_indexing_priority": "Predicted indexing priority",
     "indexing_priority": "Indexing priority",
-    "manual_indexing_curation_tag": "Manual indexing curation tag",
     "curation_tags": "Curation Tags",
     "datePubmedAdded": {
         label: "Date Range: Added to PubMed",
@@ -111,13 +113,10 @@ export const RENAME_FACETS = {
 
 // Per-facet relabeling of individual bucket values. Keyed by the resolved
 // facet key, then by the raw bucket value (bucket.key / bucket.name).
-// "no genetic data" in the manual indexing curation tag facet comes from the
-// predicted curation tag column, so display it as "predicted no genetic data"
-// to make clear it is a computed prediction, not a curator-added tag.
+// (FB's "no genetic data" predictions are topic entity tags since SCRUM-6670 and
+// are found through the TET facets, so the manual indexing curation tag facet no
+// longer needs its "predicted no genetic data" relabel.)
 export const RENAME_FACET_VALUES = {
-    "manual_indexing_curation_tag": {
-        "no genetic data": "predicted no genetic data"
-    },
     "can_display_image": {
         "true": "Yes",
         "false": "No"
@@ -125,40 +124,153 @@ export const RENAME_FACET_VALUES = {
     "has_image": {
         "true": "Yes",
         "false": "No"
+    },
+    "large_scale_tag": {
+        "true": "Yes"
     }
 }
 
 
 export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
-    "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation", "first_pass_curation", "email_extraction"],
-    "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
+    "Workflow Tags": ["abstract_classification", "author_workflow", "community_curation", "curation_classification", "email_extraction", "entity_extraction", "file_workflow", "first_pass_curation", "manual_indexing", "reference_classification"],
+    "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority"],
+    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "resource id", "language"],
     "Curation Status": ["curation_tags"],
-    "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
     "Images": ["can display image", "has image"],
-    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
+    "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty", "data_context", "large_scale_tag"],
     "Date Range": ["Date Modified in Pubmed", "Date Added To Pubmed", "Date Published", "Date Added to ABC"]
+}
+
+// Only commit years the backend can actually search. Two failure modes
+// otherwise: (1) a native date input holds intermediate values while the
+// year is being typed ("2026" passes through "0026"), and (2) the year
+// segment accepts 5-6 digit years regardless of the input's min/max.
+// date_created is compared in Elasticsearch as an epoch long in
+// nanoseconds, which only represents 1677-09-21..2262-04-11 — anything
+// outside 500s with 'long overflow' / 'Unable to obtain Instant'. These
+// whole-year bounds sit safely inside that and cover all real dates.
+const MIN_SEARCHABLE_YEAR = 1678;
+const MAX_SEARCHABLE_YEAR = 2261;
+const MIN_SEARCHABLE_DATE = `${MIN_SEARCHABLE_YEAR}-01-01`;
+const MAX_SEARCHABLE_DATE = `${MAX_SEARCHABLE_YEAR}-12-31`;
+function hasSearchableYear(dateStr){
+    const year = parseInt(dateStr.split('-')[0], 10);
+    return year >= MIN_SEARCHABLE_YEAR && year <= MAX_SEARCHABLE_YEAR;
 }
 
 const DatePicker = ({facetName,currentValue,setValueFunction}) => {
     const dispatch = useDispatch();
 
+    // Local state backing the two native <input type="date"> fields so the
+    // curator can type freely; the range is committed on Enter/blur, or
+    // shortly after a change settles (a calendar pick never blurs the input).
+    const [startInput, setStartInput] = useState('');
+    const [endInput, setEndInput] = useState('');
+    // Set when a commit was actually attempted (blur/Enter/settle timer) and
+    // declined, flagging the field(s) at fault — not derived from render
+    // state, so half-built ranges and mid-typed years don't flash red while
+    // the curator is still editing.
+    const [declinedStart, setDeclinedStart] = useState(false);
+    const [declinedEnd, setDeclinedEnd] = useState(false);
+    const commitTimerRef = useRef(null);
+
+    function clearPendingCommit(){
+        if (commitTimerRef.current){
+            clearTimeout(commitTimerRef.current);
+            commitTimerRef.current = null;
+        }
+    }
+
+    // Cancel a scheduled commit if the facet unmounts (e.g. panel collapsed).
+    useEffect(() => clearPendingCommit, []);
+
+    // Keep the typed inputs in sync with the stored range so the Day/Week/
+    // Month/Year buttons and the clear (x) button are reflected here too.
+    // Anything landing here reflects a successful commit or an external
+    // change, so any declined flags are moot.
+    useEffect(() => {
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
+        if (Array.isArray(currentValue) && currentValue.length === 2){
+            setStartInput(currentValue[0] || '');
+            setEndInput(currentValue[1] || '');
+        } else {
+            setStartInput('');
+            setEndInput('');
+        }
+    }, [currentValue]);
+
+
+    function commitTypedRange(startStr, endStr){
+        clearPendingCommit();
+        // Both cleared -> remove the filter entirely (unless there is none).
+        if (!startStr && !endStr){
+            setDeclinedStart(false);
+            setDeclinedEnd(false);
+            if (currentValue !== ''){
+                dispatch(setValueFunction(''));
+                dispatch(setSearchResultsPage(1));
+                dispatch(searchReferences());
+            }
+            return;
+        }
+        // Need both ends present, valid, with searchable years, and in order
+        // to form a range; otherwise decline and flag the field(s) at fault.
+        // An out-of-order range means the curator is mid-edit (e.g. moved the
+        // start forward before touching the end, when tabbing between the
+        // boxes commits on blur) — swapping and committing it would let the
+        // currentValue sync effect rewrite the boxes with values never typed
+        // (YYYY-MM-DD compares lexicographically).
+        const startOk = Boolean(startStr) && !isNaN(Date.parse(startStr)) && hasSearchableYear(startStr);
+        const endOk = Boolean(endStr) && !isNaN(Date.parse(endStr)) && hasSearchableYear(endStr);
+        const outOfOrder = startOk && endOk && startStr > endStr;
+        if (!startOk || !endOk || outOfOrder){
+            setDeclinedStart(!startOk || outOfOrder);
+            setDeclinedEnd(!endOk || outOfOrder);
+            return;
+        }
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
+        // Skip the no-op re-search when the committed range is unchanged
+        // (e.g. blur right after the settle timer already committed).
+        if (Array.isArray(currentValue) && currentValue[0] === startStr && currentValue[1] === endStr){
+            return;
+        }
+        dispatch(setValueFunction([startStr, endStr]));
+        dispatch(setSearchResultsPage(1));
+        dispatch(searchReferences());
+    }
+
+    // A calendar pick fires onChange but keeps focus in the input, so nothing
+    // would blur and commit the range. Schedule a commit once the value stops
+    // changing; the delay also absorbs segment-by-segment keyboard edits, and
+    // the plausible-year guard holds back mid-typed years that survive it.
+    function handleDateInputChange(nextStart, nextEnd){
+        setStartInput(nextStart);
+        setEndInput(nextEnd);
+        // The curator is editing again — withdraw any declined flags until
+        // the next commit attempt (settle timer, blur, or Enter) re-judges.
+        setDeclinedStart(false);
+        setDeclinedEnd(false);
+        clearPendingCommit();
+        commitTimerRef.current = setTimeout(() => {
+            commitTimerRef.current = null;
+            commitTypedRange(nextStart, nextEnd);
+        }, 800);
+    }
+
+    function handleInputKeyDown(e){
+        if (e.key === 'Enter'){
+            e.preventDefault();
+            e.target.blur(); // blur handler performs the commit
+        }
+    }
+
     function formatDateRange(dateRange){
             let dateStart=dateRange[0].getFullYear()+"-"+parseInt(dateRange[0].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[0].getDate().toString().padStart(2,'0');
             let dateEnd=dateRange[1].getFullYear()+"-"+parseInt(dateRange[1].getMonth()+1).toString().padStart(2,'0')+"-"+dateRange[1].getDate().toString().padStart(2,'0');
             return [dateStart,dateEnd];
-    }
-
-    function formatToUTCString(dateRange){
-        if (dateRange !== ''){
-            let dateStart = new Date (dateRange[0]);
-            let offset = dateStart.getTimezoneOffset();
-            let parsedDateStart = new Date(Date.parse(dateRange[0])  + (offset * 60000));
-            let parsedDateEnd = new Date(Date.parse(dateRange[1]) + (offset * 60000));
-            return [parsedDateStart, parsedDateEnd];
-        }else{
-            return '';
-        }
     }
 
     function handleFixedTimeClick(timeframe){
@@ -183,19 +295,6 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
         dispatch(searchReferences());
     }
 
-    function handleDateChange(newDateRangeArr){
-        if (newDateRangeArr === null) {
-            dispatch(setValueFunction(''));
-            dispatch(setSearchResultsPage(1));
-            dispatch(searchReferences());
-        }
-        else if(!isNaN(Date.parse(newDateRangeArr[0])) && !isNaN(Date.parse(newDateRangeArr[1]))){
-            dispatch(setValueFunction(formatDateRange(newDateRangeArr)));
-            dispatch(setSearchResultsPage(1));
-            dispatch(searchReferences());
-        }
-    }
-
     return(
         <div key={facetName} style={{textAlign: "left", paddingLeft: "2em", paddingBottom: "0.5em"}}>
             <h5>{facetName}</h5>
@@ -205,7 +304,52 @@ const DatePicker = ({facetName,currentValue,setValueFunction}) => {
                 <Button variant="secondary" onClick={() => {handleFixedTimeClick('Month')}}>Month</Button>
                 <Button variant="secondary" style={{'borderBottomRightRadius' : 0}} onClick={() => {handleFixedTimeClick('Year')}}>Year</Button>
             </ButtonGroup>
-            <DateRangePicker value={formatToUTCString(currentValue)} onChange= {(newDateRangeArr) => {handleDateChange(newDateRangeArr)}}/>
+            {/* "from" and "to" stacked on their own rows: the facet sidebar is
+                too narrow for both date inputs side by side (curator request). */}
+            <div style={{marginTop: "0.4em"}}>
+                <InputGroup size="sm">
+                    <InputGroup.Text style={{width: "3.2em", justifyContent: "center"}}>from</InputGroup.Text>
+                    <Form.Control
+                        type="date"
+                        aria-label={`${facetName} start date`}
+                        value={startInput}
+                        className="date-facet-input"
+                        isInvalid={declinedStart}
+                        min={MIN_SEARCHABLE_DATE}
+                        max={MAX_SEARCHABLE_DATE}
+                        onChange={(e) => handleDateInputChange(e.target.value, endInput)}
+                        onBlur={() => commitTypedRange(startInput, endInput)}
+                        onKeyDown={handleInputKeyDown}
+                    />
+                </InputGroup>
+                <InputGroup size="sm" style={{marginTop: "0.25em"}}>
+                    <InputGroup.Text style={{width: "3.2em", justifyContent: "center"}}>to</InputGroup.Text>
+                    <Form.Control
+                        type="date"
+                        aria-label={`${facetName} end date`}
+                        value={endInput}
+                        className="date-facet-input"
+                        isInvalid={declinedEnd}
+                        min={MIN_SEARCHABLE_DATE}
+                        max={MAX_SEARCHABLE_DATE}
+                        onChange={(e) => handleDateInputChange(startInput, e.target.value)}
+                        onBlur={() => commitTypedRange(startInput, endInput)}
+                        onKeyDown={handleInputKeyDown}
+                    />
+                    <Button
+                        variant="outline-secondary"
+                        aria-label={`Clear ${facetName} date range`}
+                        title="Clear dates"
+                        onClick={() => {
+                            setStartInput('');
+                            setEndInput('');
+                            commitTypedRange('', '');
+                        }}
+                    >
+                        &times;
+                    </Button>
+                </InputGroup>
+            </div>
         </div>
     )
 }
@@ -249,7 +393,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     const searchFacetsValues = useSelector(state => state.search.searchFacetsValues);
     const searchExcludedFacetsValues = useSelector(state => state.search.searchExcludedFacetsValues);
     const dispatch = useDispatch();
-    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "retraction status", "source_methods", "source_evidence_assertions"];
+    const negatedFacetCategories = ["pubmed publication status", "mod reference types", "category", "pubmed types", "confidence_levels", "data_context", "retraction status", "resource id", "source_methods", "source_evidence_assertions"];
     const [openSubFacets, setOpenSubFacets] = useState(new Set());
 
     const [sourceMethodDescriptions, setSourceMethodDescriptions] = useState({});
@@ -276,7 +420,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
     // fetch source method descriptions if 'source_methods' is included
     useEffect(() => {
         if (facetsToInclude.includes('source_methods')) {
-            api.get('/topic_entity_tag/source/all')
+            api.get('/tag_source/all')
                 .then(response => {
                     const data = response.data;
                     const mapping = {};
@@ -461,11 +605,11 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         <div className="facet-container">
             {facetsToInclude.map(facetToInclude => {
                 let key = facetToInclude.replaceAll(' ', '_');
-                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty',
+                if (!['topics', 'confidence_levels', 'confidence_scores', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'data_context', 'large_scale_tag',
                         'file_workflow', 'manual_indexing', 'reference_classification',
-		                'entity_extraction', 'curation_classification', 'community_curation', 'first_pass_curation', 'email_extraction',
-                        'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag',
-                        'can_display_image', 'has_image','curation_tags'].includes(key)) {
+		                'entity_extraction', 'curation_classification', 'abstract_classification', 'community_curation', 'first_pass_curation', 'email_extraction', 'author_workflow',
+                        'predicted_indexing_priority', 'indexing_priority',
+                        'can_display_image', 'has_image', 'curation_tags'].includes(key)) {
                     key = key + '.keyword';
                 }
 
@@ -538,7 +682,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                             </Col>                                                                                                                    
                                             <Col xs={3} sm={3}>                                                                                                       
                                                 <Badge variant="secondary">                                                                                           
-                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty'].includes(key) &&
+                                                    {['topics', 'confidence_levels', 'source_methods', 'source_evidence_assertions', 'data_novelty', 'data_context', 'large_scale_tag'].includes(key) &&
                                                         bucket.docs_count !== undefined ?
                                                         bucket.docs_count.doc_count.toLocaleString() :
                                                         bucket.doc_count.toLocaleString()}                                                                            
@@ -613,8 +757,41 @@ const AuthorFilter = () => {
 }
 
 
+// Facets with too many values for "+Show All" until the search is narrowed
+// (SCRUM-1463): with nothing selected, all journals is thousands of rows.
+const SHOW_ALL_WHEN_NARROWED_FACETS = ['resource_id.keyword'];
+
+// The facet size "+Show All" asks for. One MOD corpus can hold thousands of
+// journals (about 2,500 for SGD, 9,500 for FB), so 1000 would cut the journal
+// list short; ask for more than all the resources there are.
+const DEFAULT_SHOW_ALL_LIMIT = 1000;
+const SHOW_ALL_LIMITS = {'resource_id.keyword': 20000};
+export const getShowAllLimit = (facetLabel) => SHOW_ALL_LIMITS[facetLabel] || DEFAULT_SHOW_ALL_LIMIT;
+
+// "+Show All" only while the facet may have more values and is not already
+// showing as many as Show All would ask for.
+export const canShowAll = (facetLabel, bucketCount, limit, searchNarrowed) =>
+    (!SHOW_ALL_WHEN_NARROWED_FACETS.includes(facetLabel) || searchNarrowed) &&
+    bucketCount >= limit && limit < getShowAllLimit(facetLabel);
+
+// The search is narrowed by a query, an author filter, a selected or excluded
+// facet value, a date range or an active advanced query.
+export const isSearchNarrowed = (search) => {
+    const hasValues = (facetValues) =>
+        Object.values(facetValues || {}).some(values => Array.isArray(values) ? values.length > 0 : !!values);
+    const hasDate = (date) => Array.isArray(date) ? date.some(Boolean) : !!date;
+    return !!(search.searchQuery || search.authorFilter) ||
+        hasValues(search.searchFacetsValues) || hasValues(search.searchExcludedFacetsValues) ||
+        [search.datePubmedAdded, search.datePubmedModified, search.datePublished, search.dateCreated].some(hasDate) ||
+        (search.searchMode === 'advanced' && !!compileAdvancedQuery(search.advancedTopicQuery));
+};
+
 const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
     const searchFacetsLimits = useSelector(state => state.search.searchFacetsLimits);
+    // a boolean, so the buttons re-render only when it flips
+    const searchNarrowed = useSelector(state => isSearchNarrowed(state.search));
+    const facetLimit = searchFacetsLimits[facetLabel];
+    const showAllAllowed = canShowAll(facetLabel, facetValue.buckets?.length || 0, facetLimit, searchNarrowed);
     const dispatch = useDispatch();
 
     return (
@@ -635,10 +812,10 @@ const ShowMoreLessAllButtons = ({facetLabel, facetValue}) => {
                     dispatch(filterFacets());
                 }}>-Show Less</button></span> : null
             }
-            {facetValue.buckets && facetValue.buckets.length >= searchFacetsLimits[facetLabel] ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
+            {showAllAllowed ? <span>&nbsp;&nbsp;&nbsp;&nbsp;
                 <button className="button-to-link" onClick={() =>{
                     let newSearchFacetsLimits = _.cloneDeep(searchFacetsLimits);
-                    newSearchFacetsLimits[facetLabel] = searchFacetsLimits[facetLabel] = 1000;
+                    newSearchFacetsLimits[facetLabel] = getShowAllLimit(facetLabel);
                     dispatch(setSearchFacetsLimits(newSearchFacetsLimits));
                     dispatch(filterFacets());
                 }}>+Show All</button></span> : null }
@@ -739,6 +916,33 @@ const Facets = () => {
                         </Button>
 			<Collapse in={openFacets.has(facetCategory)}>
                             <div>
+				{facetCategory === 'Workflow Tags' && (
+				   <>
+				     {/* Advanced Workflow search entry point (SCRUM-6398): the same
+				         global facet/advanced switch as Topics and Entities — the
+				         query builder holds Workflow conditions alongside Topic Tags
+				         so mixed criteria combine in one AND/OR tree. The workflow
+				         checkboxes below stay usable in both modes and AND with the
+				         builder's conditions. */}
+				     <div style={{ marginLeft: '30px', marginBottom: '6px' }}>
+				       <ButtonGroup size="sm">
+				         <Button
+				           variant={searchMode === 'facet' ? 'primary' : 'outline-secondary'}
+				           onClick={() => dispatch(setSearchMode('facet'))}
+				         >Facets</Button>
+				         <Button
+				           variant={searchMode === 'advanced' ? 'primary' : 'outline-secondary'}
+				           onClick={() => dispatch(setSearchMode('advanced'))}
+				         >Advanced query</Button>
+				       </ButtonGroup>
+				       {searchMode === 'advanced' && (
+				         <div style={{ fontSize: '0.72rem', color: '#6c757d', marginTop: '2px' }}>
+				           Checkbox selections below also apply, combined (AND) with the query builder.
+				         </div>
+				       )}
+				     </div>
+				   </>
+				)}
 				{facetCategory === 'Topics and Entities' && (
 				   <>
 				     {/* Advanced Topic search toggle (SCRUM-6228): sits next to the
@@ -775,9 +979,7 @@ const Facets = () => {
                                 )}
                                 {facetCategory === 'Date Range' ? <DateFacet facetsToInclude={facetsInCategory}/>
                                     : (facetCategory === 'Topics and Entities' && searchMode === 'advanced')
-                                        ? <div style={{ marginLeft: '30px', marginRight: '10px', fontSize: '0.8rem', color: '#6c757d' }}>
-                                              The advanced query builder is shown above the results, where it has more room.
-                                          </div>
+                                        ? null
                                         : <Facet facetsToInclude={facetsInCategory} renameFacets={RENAME_FACETS}/>}
                             </div>
                         </Collapse>

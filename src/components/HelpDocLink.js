@@ -1,0 +1,42 @@
+import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons';
+import LightTip from './LightTip';
+
+// Curator help documentation on the LITERATURE Confluence space (SCRUM-6538).
+// Central registry of curator doc URLs: some entries (validation, aiCuration)
+// are not linked from the UI yet and are kept here for upcoming placements.
+export const HELP_DOC_URLS = {
+  topicEntityTagging: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/760610818/Topic+and+Entity+Tagging',
+  modCorpusSorting: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/565051399/MOD+corpus+sorting',
+  biblioEditor: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1460142082/Biblio+Editor+Tab+Help',
+  abcReportsPage: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1337163777/ABC+Reports+Page',
+  workflowStatistics: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1460535297/Workflow+Statistics',
+  workflowDiagram: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1459945474/Workflow+Diagram',
+  models: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1460404247/Models',
+  qcObsoleteEntities: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1337262081/TET+Table+Deleted+or+Obsoleted+Entities',
+  qcRetractedRefs: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1337327617/Retracted+References+with+Manual+Tags',
+  qcObsoletePmids: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1337425921/PMIDs+obsoleted+this+month',
+  qcDuplicateOrcids: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/1337491457/Duplicate+ORCIDs',
+  validation: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/930021378/Validation',
+  aiCuration: 'https://agr-jira.atlassian.net/wiki/spaces/LITERATURE/pages/543916033/AI+for+Literature+Curation'
+};
+
+// Small question-mark icon that opens the given help doc in a new tab.
+// Uses the regular (outline) icon in the surrounding text color, at the same
+// fixed 20px size as the search-bar and query-builder help icons, so every
+// help ? in the app looks the same regardless of the surrounding font size
+// (SCRUM-5898).
+const HelpDocLink = ({ url, title = 'Open help documentation', style = {} }) => {
+  return (
+    <LightTip tip={title}>
+      <a href={url} target="_blank" rel="noopener noreferrer"
+         aria-label={title} style={{ verticalAlign: 'super', color: 'inherit', lineHeight: 1, ...style }}
+         onClick={(e) => e.stopPropagation()} >
+        <FontAwesomeIcon icon={faQuestionCircle} style={{ width: '20px', height: '20px' }} />
+      </a>
+    </LightTip>
+  );
+};
+
+export default HelpDocLink;

@@ -1,0 +1,730 @@
+// Stateful host for the Person screen (author -> person reconciliation).
+//
+// Reached at /Biblio/?action=person&referenceCurie=..., so it is linkable from
+// anywhere. It is a first-class action rather than a modal over the editor because
+// it is always full-page -- there is no windowed mode to toggle back to.
+//
+// Like BiblioAuthorReorder, the working state never touches referenceJsonLive:
+// writing there would set referenceJsonHasChange and make the reference look dirty
+// inside a screen that is not editing it. Leaving is just an unmount.
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useHistory } from 'react-router-dom';
+
+import Container from 'react-bootstrap/Container';
+
+import BiblioPersonPanel from './BiblioPersonPanel';
+import { transitionWorkflowTag } from './WorkflowTagService';
+import { api } from '../../api';
+import { apiErrorMessage } from '../../utils/apiErrorMessage';
+import { orderedAuthors } from '../../utils/authorOrdering';
+import { mainFilesForCurator } from '../../utils/mainReferenceFiles';
+import {
+  stagedInstitutionsFromAuthors, appendStagedInstitution, draftFromAuthor,
+  matchQueryForAuthor, validateDraft, buildCommitPlan, suggestWorkflowStatus,
+  relinksSamePerson, duplicatePersonErrors,
+  keepsExistingLink, AUTHOR_PERSON_PROCESS_ATP, AUTHOR_PERSON_DONE,
+} from '../../utils/authorPersonDraft';
+import { executeCommitPlan } from '../../actions/authorPersonActions';
+import {
+  biblioQueryReferenceCurie, fetchReferenceFiles, downloadReferencefile,
+} from '../../actions/biblioActions';
+
+// Matches are fetched for every author as the page opens. Three at a time keeps a
+// fifty-author reference from opening fifty sockets at once while still finishing
+// a normal paper's authors in about the time it takes to read the staging area.
+const MATCH_CONCURRENCY = 3;
+
+const BiblioPerson = () => {
+  const dispatch = useDispatch();
+  const history = useHistory();
+  const referenceCurie = useSelector((state) => state.biblio.referenceCurie);
+  const referenceJsonLive = useSelector((state) => state.biblio.referenceJsonLive);
+  const referenceFiles = useSelector((state) => state.biblio.referenceFiles);
+  const loadingFileNames = useSelector((state) => state.biblio.loadingFileNames);
+  const accessToken = useSelector((state) => state.isLogged.accessToken);
+  const cognitoMod = useSelector((state) => state.isLogged.cognitoMod);
+  const testerMod = useSelector((state) => state.isLogged.testerMod);
+  const accessLevel = (testerMod !== 'No') ? testerMod : cognitoMod;
+
+  // Seeded once from the reference as it stood when the screen opened. A refetch
+  // mid-edit must not wipe a half-filled staging area, so these are not recomputed.
+  const [authors] = useState(() => orderedAuthors(referenceJsonLive.authors));
+  const [staged, setStaged] = useState(() => stagedInstitutionsFromAuthors(authors));
+  const [drafts, setDrafts] = useState(() => {
+    // Seeded against the same staged list, so every author starts on the institution
+    // its own affiliation produced rather than on "(none)".
+    const seededStaged = stagedInstitutionsFromAuthors(authors);
+    const seeded = {};
+    for (const author of authors) seeded[author.author_id] = draftFromAuthor(author, seededStaged);
+    return seeded;
+  });
+
+  const [matches, setMatches] = useState({});
+  const [matchState, setMatchState] = useState({});
+  const [personDetails, setPersonDetails] = useState({});
+  const [showAll, setShowAll] = useState({});
+  // Possible people are a count until asked for: a dozen authors each listing eight
+  // candidates is most of the page, and usually none of them are the person wanted.
+  const [matchesOpen, setMatchesOpen] = useState({});
+  const [results, setResults] = useState({});
+  const [committing, setCommitting] = useState(false);
+  const [commitSummary, setCommitSummary] = useState(null);
+  // The reference's author-person curation status for the curator's MOD, and whether
+  // it has been read yet. No status means the reference is not in author-person
+  // curation for that MOD, and then nothing on this screen may change a link
+  // (SCRUM-6827) -- the page is still open to everyone, read-only.
+  const [statusLoad, setStatusLoad] = useState('loading');
+  const [storedStatus, setStoredStatus] = useState(null);
+  // A status the curator picked by hand, or null to follow the one the staged changes
+  // suggest (suggestWorkflowStatus). Staged like everything else: written on Commit.
+  const [manualStatus, setManualStatus] = useState(null);
+  // Person-only rows staged for deletion, by their author_id.
+  const [stubRemovals, setStubRemovals] = useState(() => new Set());
+
+  // People attached to this reference without an author_order. Seeded once and then
+  // owned here, because a stub leaves the list the moment it is resolved.
+  //
+  // person_curie is null on these rows for the same reason it is null on the authors:
+  // the reference endpoint serialises AuthorModel through jsonable_encoder and the
+  // model has no person_curie property. Verified against dev4002. So they arrive as a
+  // bare person_id and the curie is resolved below.
+  const [stubs, setStubs] = useState(() => (
+    Array.isArray(referenceJsonLive.author_person_without_author_order)
+      ? referenceJsonLive.author_person_without_author_order
+        .filter((row) => row && row.person_id)
+        .map((row) => ({
+          author_id: row.author_id,
+          person_id: row.person_id,
+          curie: row.person_curie || null,
+          name: '',
+          resolveFailed: false,
+          error: '',
+          // Carried through explicitly, like every other field here. This is a
+          // projection rather than a spread of the author row, so anything the UI
+          // needs has to be named -- these two were added to the display later and
+          // silently rendered nothing until they were listed here.
+          updated_by: row.updated_by,
+          date_updated: row.date_updated,
+        }))
+      : []
+  ));
+
+  // Set true on mount as well as cleared on unmount. Clearing only would be correct
+  // today but is a landmine: StrictMode's simulated unmount/remount would leave this
+  // false on a live component, and with resolveAttempted already populated no person
+  // would ever resolve and nothing would say why.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  // person_ids a resolve has already been attempted for, successfully or not.
+  //
+  // Both resolve effects below read the same state they write, so without this each
+  // resolution re-runs the effect and re-fires a request for every id still
+  // outstanding -- N + (N-1) + ... requests for one page open. Worse, an id that can
+  // never resolve (404, or a payload with no curie) stays outstanding forever, so
+  // from then on ANY change to drafts re-fires the whole batch, including every
+  // keystroke in an author's name field. Recording the attempt rather than the
+  // success is what stops that: a failed resolve is not retried, it just stays
+  // unresolved -- and both rows label that terminal state rather than leaving an
+  // ellipsis implying a request still in flight.
+  const resolveAttempted = useRef(new Set());
+
+  // RowDisplayReferencefiles fetches these on the display tab; this screen never
+  // renders it, so nothing would populate referenceFiles without asking here.
+  useEffect(() => {
+    if (referenceCurie !== '') dispatch(fetchReferenceFiles(referenceCurie));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referenceCurie]);
+
+  // Re-read whenever the MOD changes: DevToolsDropdown switches testerMod at runtime
+  // with no reload, and the status (and so whether anything may be edited) is per MOD.
+  // Cleared to "loading" first so a write can never go out against the previous MOD's
+  // answer while the new one is in flight.
+  useEffect(() => {
+    if (!referenceCurie) return undefined;
+    setStatusLoad('loading');
+    setStoredStatus(null);
+    setManualStatus(null);
+    if (!accessLevel || accessLevel === 'No') {
+      // No MOD, so no MOD workflow to be in: read-only, not an error.
+      setStatusLoad('ready');
+      return undefined;
+    }
+    let cancelled = false;
+    api.get(`/workflow_tag/get_current_workflow_status/${referenceCurie}/${accessLevel}/`
+      + AUTHOR_PERSON_PROCESS_ATP)
+      .then((res) => {
+        if (cancelled || !mounted.current) return;
+        const atp = typeof res.data === 'string' && res.data ? res.data : null;
+        setStoredStatus(atp);
+        setStatusLoad('ready');
+      })
+      .catch((error) => {
+        console.error('author-person status error:', error);
+        if (!cancelled && mounted.current) setStatusLoad('error');
+      });
+    return () => { cancelled = true; };
+  }, [referenceCurie, accessLevel]);
+
+  // Possible people for one author, fetched on demand. Linked authors get none at
+  // open (the row shows the link instead), so staging an unlink is what asks for them.
+  const fetchMatchesFor = useCallback(async (authorId) => {
+    const author = authors.find((a) => a.author_id === authorId);
+    const query = author ? matchQueryForAuthor(author) : '';
+    if (!query) {
+      setMatches((m) => ({ ...m, [authorId]: [] }));
+      setMatchState((s) => ({ ...s, [authorId]: 'done' }));
+      return;
+    }
+    setMatchState((s) => ({ ...s, [authorId]: 'loading' }));
+    try {
+      const res = await api.get('/person/by_name?name=' + encodeURIComponent(query));
+      if (!mounted.current) return;
+      const found = Array.isArray(res.data) ? res.data.filter((p) => p && p.curie) : [];
+      setMatches((m) => ({ ...m, [authorId]: found }));
+      setMatchState((s) => ({ ...s, [authorId]: 'done' }));
+      setPersonDetails((d) => {
+        const next = { ...d };
+        for (const person of found) next[person.curie] = person;
+        return next;
+      });
+    } catch (error) {
+      console.error('person match error:', error);
+      if (!mounted.current) return;
+      setMatches((m) => ({ ...m, [authorId]: [] }));
+      setMatchState((s) => ({ ...s, [authorId]: 'error' }));
+    }
+  }, [authors]);
+
+  // Possible people for every author, surname only. Narrowing the query here would
+  // drop exactly the aka cases a real matcher exists to find, so the list is wide
+  // and the row caps what it shows.
+  useEffect(() => {
+    let cancelled = false;
+    // An author who already has a person needs no suggestions -- the screen shows the
+    // link instead of the list, so searching for candidates would be work nobody sees.
+    const queue = authors
+      .filter((author) => !(author.person_id || author.person_curie))
+      .map((author) => ({ author, query: matchQueryForAuthor(author) }));
+    setMatchState(Object.fromEntries(queue.map(({ author }) => [author.author_id, 'loading'])));
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const { author, query } = queue.shift();
+        if (cancelled) return;
+        if (!query) {
+          if (!cancelled && mounted.current) {
+            setMatches((m) => ({ ...m, [author.author_id]: [] }));
+            setMatchState((s) => ({ ...s, [author.author_id]: 'done' }));
+          }
+          continue;
+        }
+        try {
+          const res = await api.get('/person/by_name?name=' + encodeURIComponent(query));
+          if (cancelled || !mounted.current) return;
+          const found = Array.isArray(res.data) ? res.data.filter((p) => p && p.curie) : [];
+          setMatches((m) => ({ ...m, [author.author_id]: found }));
+          setMatchState((s) => ({ ...s, [author.author_id]: 'done' }));
+          // by_name returns whole person records, so the compare panel already has
+          // what it needs and never has to fetch a person the curator can see.
+          setPersonDetails((d) => {
+            const next = { ...d };
+            for (const person of found) next[person.curie] = person;
+            return next;
+          });
+        } catch (error) {
+          console.error('person match error:', error);
+          if (cancelled || !mounted.current) return;
+          setMatches((m) => ({ ...m, [author.author_id]: [] }));
+          setMatchState((s) => ({ ...s, [author.author_id]: 'error' }));
+        }
+      }
+    };
+
+    Promise.all(Array.from({ length: MATCH_CONCURRENCY }, worker));
+    return () => { cancelled = true; };
+  }, [authors]);
+
+  // Picking the person an author is already linked to, after staging that link's
+  // removal, means keep the link: restore it rather than stage an unlink and a relink
+  // of the same person.
+  const onDraftChange = useCallback((authorId, patch) => {
+    const merged = { ...drafts[authorId], ...patch };
+    if (relinksSamePerson(merged)) {
+      setDrafts((prev) => ({
+        ...prev,
+        [authorId]: { ...prev[authorId], pendingUnlink: false, mode: 'none', selectedPerson: null },
+      }));
+      setMatchesOpen((prev) => ({ ...prev, [authorId]: false }));
+      return;
+    }
+    setDrafts((prev) => ({ ...prev, [authorId]: { ...prev[authorId], ...patch } }));
+  }, [drafts]);
+
+  const onStagedChange = useCallback((number, patch) => {
+    setStaged((prev) => prev.map((inst) => (inst.number === number ? { ...inst, ...patch } : inst)));
+  }, []);
+
+  const onToggleShowAll = useCallback((authorId) => {
+    setShowAll((prev) => ({ ...prev, [authorId]: !prev[authorId] }));
+  }, []);
+
+  // Also what "confirm selection" and "change" call: confirming is just closing the
+  // panel on a selection that is already made, so one toggle serves all three.
+  const onToggleMatches = useCallback((authorId) => {
+    setMatchesOpen((prev) => ({ ...prev, [authorId]: !prev[authorId] }));
+  }, []);
+
+  const onAddInstitution = useCallback(() => {
+    setStaged((prev) => appendStagedInstitution(prev));
+  }, []);
+
+  // Staged like every other change here: "remove" marks the link to be cleared on
+  // Commit. While marked, the row opens up suggestions and create, so a replacement
+  // can be chosen in the same commit. Undoing it also drops any replacement, which
+  // would otherwise sit hidden behind the restored link and still be committed.
+  const onToggleUnlink = useCallback((authorId) => {
+    const draft = drafts[authorId];
+    if (!draft || !draft.isLinked) return;
+    const pending = !draft.pendingUnlink;
+    setDrafts((prev) => ({
+      ...prev,
+      [authorId]: {
+        ...prev[authorId],
+        pendingUnlink: pending,
+        mode: 'none',
+        selectedPerson: null,
+        // The commit pins describe the link being removed. Kept, a link committed
+        // earlier this session would make a replacement of the same kind look already
+        // done -- or a re-create reuse the old person -- and the commit skip it.
+        // Undo needs none of them: a linked author with nothing staged plans nothing.
+        committedPersonCurie: null,
+        createdPersonCurie: null,
+        labLinkedCurie: null,
+      },
+    }));
+    if (!pending) setMatchesOpen((prev) => ({ ...prev, [authorId]: false }));
+    if (pending && matchState[authorId] === undefined) fetchMatchesFor(authorId);
+  }, [drafts, matchState, fetchMatchesFor]);
+
+  // Authors that arrived already linked carry only person_id (see draftFromAuthor), so
+  // resolve each one to a curie and display name. /person/{curie_or_person_id} takes
+  // either, so the id is enough. Without this the screen knows an author is linked but
+  // cannot say to whom or offer a link to the record.
+  useEffect(() => {
+    const unresolved = Object.values(drafts)
+      .filter((d) => d && d.isLinked && !d.existingPersonCurie && d.existingPersonId)
+      .filter((d) => !resolveAttempted.current.has(d.existingPersonId));
+    if (unresolved.length === 0) return;
+    for (const draft of unresolved) {
+      resolveAttempted.current.add(draft.existingPersonId);
+      // Nothing retries this, so a failure is terminal and has to be recorded rather
+      // than only logged -- otherwise the row sits on "…" forever, claiming a request
+      // that will never land.
+      const markFailed = () => {
+        if (!mounted.current) return;
+        setDrafts((prev) => ({
+          ...prev,
+          [draft.authorId]: { ...prev[draft.authorId], resolveFailed: true },
+        }));
+      };
+      api.get('/person/' + draft.existingPersonId)
+        .then((res) => {
+          if (!mounted.current) return;
+          if (!res.data || !res.data.curie) { markFailed(); return; }
+          setPersonDetails((d) => ({ ...d, [res.data.curie]: res.data }));
+          setDrafts((prev) => ({
+            ...prev,
+            [draft.authorId]: {
+              ...prev[draft.authorId],
+              existingPersonCurie: res.data.curie,
+              existingPersonName: res.data.display_name || '',
+              resolveFailed: false,
+            },
+          }));
+        })
+        .catch((error) => {
+          console.error('linked person resolve error:', error);
+          markFailed();
+        });
+    }
+  }, [drafts]);
+
+  // Stubs arrive as a bare person_id, so resolve each to a curie and name. Without
+  // this the list can only say "person 5824", which names nobody.
+  useEffect(() => {
+    const unresolved = stubs
+      .filter((stub) => !stub.curie && stub.person_id)
+      .filter((stub) => !resolveAttempted.current.has(stub.person_id));
+    if (unresolved.length === 0) return;
+    for (const stub of unresolved) {
+      resolveAttempted.current.add(stub.person_id);
+      const markFailed = () => {
+        if (!mounted.current) return;
+        setStubs((prev) => prev.map((row) => (row.author_id === stub.author_id
+          ? { ...row, resolveFailed: true } : row)));
+      };
+      api.get('/person/' + stub.person_id)
+        .then((res) => {
+          if (!mounted.current) return;
+          if (!res.data || !res.data.curie) { markFailed(); return; }
+          setStubs((prev) => prev.map((row) => (row.author_id === stub.author_id
+            ? {
+              ...row,
+              curie: res.data.curie,
+              name: res.data.display_name || '',
+              resolveFailed: false,
+            }
+            : row)));
+        })
+        .catch((error) => {
+          console.error('stub person resolve error:', error);
+          markFailed();
+        });
+    }
+  }, [stubs]);
+
+  // Choosing the author a stub is just stages that author to link to the stub's
+  // person -- the same draft a picked suggestion makes, so Commit sends the same
+  // PATCH, and link_person absorbs the person-only row then. Whoever held this
+  // person before is cleared, so one person never sits staged on two authors.
+  const onAssignStub = useCallback((stub, authorId) => {
+    if (!stub.curie) return;
+    setDrafts((prev) => {
+      const next = { ...prev };
+      for (const [id, draft] of Object.entries(prev)) {
+        if (draft && draft.mode === 'link' && draft.selectedPerson
+            && draft.selectedPerson.curie === stub.curie) {
+          next[id] = { ...draft, mode: 'none', selectedPerson: null };
+        }
+      }
+      if (authorId) {
+        next[authorId] = {
+          ...next[authorId],
+          mode: 'link',
+          selectedPerson: { curie: stub.curie, name: stub.name || '' },
+        };
+      }
+      return next;
+    });
+    // Collapse the author's suggestions so the row shows the outcome -- "→ curie" --
+    // rather than an open picker that looks like nothing was chosen.
+    if (authorId) setMatchesOpen((prev) => ({ ...prev, [authorId]: false }));
+  }, []);
+
+  // The person does not belong on this reference at all. Staged; on Commit the row is
+  // deleted rather than unlinked -- see buildCommitPlan.
+  const onToggleStubRemoval = useCallback((stub) => {
+    setStubRemovals((prev) => {
+      const next = new Set(prev);
+      if (next.has(stub.author_id)) next.delete(stub.author_id);
+      else next.add(stub.author_id);
+      return next;
+    });
+  }, []);
+
+  // A person picked from the typeahead rather than the match list is not in
+  // personDetails yet, so fetch it -- the compare panel is useless without it.
+  useEffect(() => {
+    const wanted = Object.values(drafts)
+      .filter((d) => d && d.mode === 'link' && d.selectedPerson)
+      .map((d) => d.selectedPerson.curie)
+      .filter((curie) => curie && !personDetails[curie]);
+    if (wanted.length === 0) return;
+    for (const curie of new Set(wanted)) {
+      api.get('/person/' + curie)
+        .then((res) => {
+          if (!mounted.current || !res.data) return;
+          setPersonDetails((d) => ({ ...d, [curie]: res.data }));
+        })
+        .catch((error) => console.error('person detail fetch error:', error));
+    }
+  }, [drafts, personDetails]);
+
+  const errorsByAuthor = {};
+  for (const author of authors) {
+    errorsByAuthor[author.author_id] = validateDraft(drafts[author.author_id], staged);
+  }
+  const duplicates = duplicatePersonErrors(authors, drafts);
+  for (const [authorId, errors] of Object.entries(duplicates)) {
+    errorsByAuthor[authorId] = [...(errorsByAuthor[authorId] || []), ...errors];
+  }
+
+  const authorDrafts = authors.map((a) => drafts[a.author_id]);
+  // Nothing may change unless the reference is in author-person curation for this MOD.
+  const editable = statusLoad === 'ready' && storedStatus !== null;
+
+  // From the plan itself rather than counting drafts in link/create mode, so the
+  // button promises exactly what the commit will do. Counting modes said "Commit 4"
+  // when three of those four were already committed and would be skipped.
+  const commitPlan = buildCommitPlan(authorDrafts, staged, undefined, [...stubRemovals]);
+  const plannedCount = commitPlan.length;
+  // What the dropdown shows: the curator's own pick if they made one, otherwise what
+  // the staged changes call for. autoStatus marks the second case when it differs
+  // from what is stored, so the dropdown can say why it moved.
+  const suggestedStatus = editable
+    ? suggestWorkflowStatus(commitPlan, authorDrafts, storedStatus) : storedStatus;
+  const workflowStatus = manualStatus !== null ? manualStatus : suggestedStatus;
+  const autoStatus = manualStatus === null && workflowStatus !== storedStatus;
+  const statusChanged = editable && workflowStatus !== null && workflowStatus !== storedStatus;
+
+  // Only authors who will have no person can take one of these stubs.
+  // uq_author_ref_person allows a person one author per reference, so offering an
+  // author keeping its link would only earn a 409.
+  const availableAuthors = authors.filter((author) => !keepsExistingLink(drafts[author.author_id]));
+
+  // stub author_id -> the author staged to take that stub's person, read off the
+  // drafts rather than kept separately so the two can never disagree.
+  const stubAssignments = {};
+  for (const stub of stubs) {
+    if (!stub.curie) continue;
+    const holder = authors.find((author) => {
+      const draft = drafts[author.author_id];
+      return draft && draft.mode === 'link' && draft.selectedPerson
+        && draft.selectedPerson.curie === stub.curie;
+    });
+    if (holder) stubAssignments[stub.author_id] = holder.author_id;
+  }
+
+  const onWorkflowStatusChange = useCallback((atp) => {
+    setManualStatus(atp);
+  }, []);
+
+  const onCommit = async () => {
+    if (!editable) return;
+    const plans = buildCommitPlan(authorDrafts, staged, undefined, [...stubRemovals]);
+    if (plans.length === 0 && !statusChanged) return;
+    setCommitting(true);
+    // Results are keyed by author and only the planned authors are re-run, so the
+    // messages from an earlier commit stay put rather than vanishing and being
+    // re-earned each time a later author is added.
+    setCommitSummary(null);
+
+    // The person each staged unlink takes away, so a replacement that then fails can
+    // say the author lost that link too -- unlinks run first, so it is already gone.
+    const removedCurie = {};
+    for (const draft of authorDrafts) {
+      if (draft && draft.isLinked && draft.pendingUnlink) {
+        removedCurie[draft.authorId] = draft.existingPersonCurie || `person ${draft.existingPersonId}`;
+      }
+    }
+    const unlinkedThisRun = new Set();
+
+    const collected = await executeCommitPlan(plans, (incoming) => {
+      if (!mounted.current) return;
+      if (incoming.kind === 'unlink' && incoming.ok) unlinkedThisRun.add(incoming.authorId);
+      const result = (!incoming.ok && (incoming.kind === 'link' || incoming.kind === 'create')
+        && unlinkedThisRun.has(incoming.authorId))
+        ? { ...incoming, removedPersonCurie: removedCurie[incoming.authorId] }
+        : incoming;
+      if (result.kind === 'removeStub') {
+        if (result.ok) {
+          setStubs((prev) => prev.filter((row) => row.author_id !== result.authorId));
+          setStubRemovals((prev) => {
+            const next = new Set(prev);
+            next.delete(result.authorId);
+            return next;
+          });
+        } else {
+          setStubs((prev) => prev.map((row) => (row.author_id === result.authorId
+            ? { ...row, error: result.message } : row)));
+        }
+        return;
+      }
+      // Only failures are kept. A success now shows as the author's linked row, so a
+      // green banner repeating it would just be the same news twice.
+      setResults((prev) => {
+        const next = { ...prev };
+        if (result.ok) delete next[result.authorId];
+        else next[result.authorId] = result;
+        return next;
+      });
+      // Pin whatever this run actually achieved, even when a later step failed, so a
+      // second commit redoes none of it:
+      //   createdPersonCurie -- MATI's counter does not roll back, so re-creating
+      //     would burn another AGRKB id and leave a duplicate person.
+      //   labLinkedCurie -- laboratory_person has no unique constraint, so re-posting
+      //     the same pair silently adds a duplicate row.
+      //   committedPersonCurie -- set only on full success; it is what lets an
+      //     untouched author be skipped entirely next time.
+      if (result.kind === 'unlink') {
+        if (!result.ok) return;
+        // Drop the old link. The staged replacement, if any, is left alone: its link
+        // or create runs later in this same commit and pins itself then. The old
+        // link's commit pins were already cleared when the unlink was staged.
+        setDrafts((prev) => ({
+          ...prev,
+          [result.authorId]: {
+            ...prev[result.authorId],
+            isLinked: false,
+            pendingUnlink: false,
+            existingPersonId: null,
+            existingPersonCurie: null,
+            existingPersonName: '',
+          },
+        }));
+        return;
+      }
+      // link_person absorbs a person-only row for the person it links, so a stub for
+      // that person is gone server-side now too.
+      if (result.ok && result.personCurie) {
+        setStubs((prev) => prev.filter((row) => row.curie !== result.personCurie));
+      }
+      setDrafts((prev) => {
+        const draft = prev[result.authorId];
+        if (!draft) return prev;
+        const pinned = { ...draft };
+        if (result.createdPersonCurie) pinned.createdPersonCurie = result.createdPersonCurie;
+        if (result.labLinkedCurie) pinned.labLinkedCurie = result.labLinkedCurie;
+        if (result.ok) {
+          pinned.committedPersonCurie = result.personCurie;
+          // A committed author IS a linked author, so it renders as one -- the same
+          // row a freshly loaded page shows for a pre-existing link, remove button
+          // and all. Leaving it in its editing state with a success banner beside it
+          // would mean two different presentations of the identical fact.
+          pinned.isLinked = true;
+          pinned.pendingUnlink = false;
+          pinned.existingPersonCurie = result.personCurie;
+          pinned.existingPersonName =
+            (draft.selectedPerson && draft.selectedPerson.name) || draft.fields.display_name || '';
+        }
+        return { ...prev, [result.authorId]: pinned };
+      });
+    });
+
+    if (!mounted.current) return;
+    // An unlink that failed is forgiven when the same author's link or create then
+    // succeeded: that PATCH replaces the person anyway, so the author ends up as meant
+    // and Done need not be skipped over it.
+    const counted = collected.filter((r) => !(r.kind === 'unlink' && !r.ok && collected.some(
+      (o) => o.authorId === r.authorId && o.ok && (o.kind === 'link' || o.kind === 'create'),
+    )));
+    const applied = counted.filter((r) => r.ok).length;
+    const failed = counted.length - applied;
+    // Replacements whose old link went but whose new one did not: those authors have no
+    // person now, which "left as-is" would wrongly suggest.
+    const lostLinks = counted.filter((r) => !r.ok && (r.kind === 'link' || r.kind === 'create')
+      && unlinkedThisRun.has(r.authorId)).length;
+
+    // The status goes last, after the links it describes. Done is never written over a
+    // failed change: some author would be left without the person the curator meant,
+    // so the reference is not done, and the curator is told so instead.
+    let status = null;
+    if (statusChanged) {
+      // An automatic status is also skipped when every change failed: nothing moved,
+      // so there is no progress to record. A status picked by hand is always written,
+      // Done aside.
+      if ((failed > 0 && workflowStatus === AUTHOR_PERSON_DONE)
+          || (manualStatus === null && counted.length > 0 && applied === 0)) {
+        // 'none' when nothing went through at all, 'partial' when only some did (which
+        // only skips Done): the summary words the two differently.
+        status = { state: 'skipped', atp: workflowStatus, reason: applied === 0 ? 'none' : 'partial' };
+      } else {
+        try {
+          await transitionWorkflowTag({
+            curie_or_reference_id: referenceCurie,
+            mod_abbreviation: accessLevel,
+            new_workflow_tag_atp_id: workflowStatus,
+          });
+          if (!mounted.current) return;
+          setStoredStatus(workflowStatus);
+          status = { state: 'saved', atp: workflowStatus };
+        } catch (error) {
+          console.error('author-person status transition error:', error);
+          if (!mounted.current) return;
+          status = {
+            state: 'failed',
+            atp: workflowStatus,
+            message: apiErrorMessage('workflow_tag/transition_to_workflow_status', error),
+          };
+        }
+      }
+    }
+
+    // A hand-picked status is forgotten once it is saved, or when it needed no write
+    // (it equals the stored status) and something else went through -- otherwise such
+    // a pick would switch suggestions off for the whole visit. It is kept whenever its
+    // own write failed or was skipped, so a retry writes the same pick.
+    if ((status && status.state === 'saved') || (status === null && applied > 0)) {
+      setManualStatus(null);
+    }
+
+    setCommitSummary({ total: counted.length, applied, failed, lostLinks, status });
+    setCommitting(false);
+    // Refetch so the editor and the "already linked" badges here reflect the new
+    // author.person_id values rather than the state the screen opened with.
+    if (applied > 0 && referenceCurie !== '') {
+      dispatch(biblioQueryReferenceCurie(referenceCurie));
+    }
+  };
+
+  // Main files only, with the display tab's own access rule -- see mainReferenceFiles,
+  // where it lives so the two copies cannot drift again without a test failing.
+  const mainFiles = mainFilesForCurator(referenceFiles, {
+    accessLevel,
+    openAccess: referenceJsonLive.copyright_license_open_access === true,
+  });
+
+  const onDownloadFile = (fileId, filename) => {
+    dispatch(downloadReferencefile(fileId, filename, accessToken));
+  };
+
+  const onBack = () => {
+    history.push('/Biblio/?action=editor&referenceCurie=' + referenceCurie);
+  };
+
+  return (
+    <Container fluid>
+      <BiblioPersonPanel
+        referenceCurie={referenceCurie}
+        title={referenceJsonLive.title || ''}
+        crossReferences={referenceJsonLive.cross_references || []}
+        mainFiles={mainFiles}
+        loadingFileNames={loadingFileNames}
+        onDownloadFile={onDownloadFile}
+        authors={authors}
+        stubs={stubs}
+        staged={staged}
+        drafts={drafts}
+        matches={matches}
+        matchState={matchState}
+        personDetails={personDetails}
+        errorsByAuthor={errorsByAuthor}
+        results={results}
+        showAll={showAll}
+        matchesOpen={matchesOpen}
+        committing={committing}
+        commitSummary={commitSummary}
+        plannedCount={plannedCount}
+        mod={accessLevel}
+        statusLoad={statusLoad}
+        editable={editable}
+        storedStatus={storedStatus}
+        workflowStatus={workflowStatus}
+        statusChanged={statusChanged}
+        autoStatus={autoStatus}
+        onWorkflowStatusChange={onWorkflowStatusChange}
+        blockedReason=""
+        onStagedChange={onStagedChange}
+        onAddInstitution={onAddInstitution}
+        onDraftChange={onDraftChange}
+        onToggleShowAll={onToggleShowAll}
+        onToggleMatches={onToggleMatches}
+        onToggleUnlink={onToggleUnlink}
+        availableAuthors={availableAuthors}
+        stubAssignments={stubAssignments}
+        stubRemovals={stubRemovals}
+        onAssignStub={onAssignStub}
+        onToggleStubRemoval={onToggleStubRemoval}
+        onCommit={onCommit}
+        onBack={onBack}
+      />
+    </Container>
+  );
+};
+
+export default BiblioPerson;

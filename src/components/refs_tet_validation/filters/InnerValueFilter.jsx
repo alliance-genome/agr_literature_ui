@@ -7,6 +7,9 @@ const InnerValueFilter = ({
   onModelChange,
   availableValues = [],
   filterLabel = 'Filter',
+  // Display-only map raw filter value -> label. The checkbox values (and hence
+  // the persisted filter model) stay the raw values.
+  valueLabels,
   innerFieldType,
   sourceFilterModel,
   colDef,
@@ -98,7 +101,10 @@ const InnerValueFilter = ({
               checked={effectiveSelected.has(value)}
               onChange={(e) => onChange(value, e.target.checked)}
             />
-            <label htmlFor={`ivf-${innerFieldType}-${value}`}> {value}</label>
+            <label htmlFor={`ivf-${innerFieldType}-${value}`}>
+              {' '}
+              {valueLabels?.[value] || value}
+            </label>
           </div>
         ))}
       </div>

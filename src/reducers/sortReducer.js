@@ -85,6 +85,7 @@ export default function(state = initialState, action) {
       // console.log(action.payload);
       for (let reference of action.payload) {
         reference['workflow'] = 'experimental';
+        reference['author_person_curation'] = true;	// SCRUM-6487: WB checkbox, checked by default
         reference['existing_reference_workflow_tag_id_expt_meeting'] = '';	// parent term in ontology is called reference_type which is not clear
         if ('workflow_tags' in reference && reference['workflow_tags'].length > 0) {
           for (const workflowTag of reference['workflow_tags'].values()) {
@@ -142,6 +143,18 @@ export default function(state = initialState, action) {
       return {
         ...state,
         referencesToSortLive: sortToggleWorkflowReferencesToSortLive
+      }
+
+    case 'CHANGE_SORT_AUTHOR_PERSON_TOGGLER':
+      const sortToggleAuthorPersonReferencesToSortLive = [...state.referencesToSortLive];
+      const toggledReference = sortToggleAuthorPersonReferencesToSortLive[action.payload];
+      sortToggleAuthorPersonReferencesToSortLive[action.payload] = {
+        ...toggledReference,
+        author_person_curation: !toggledReference['author_person_curation']
+      };
+      return {
+        ...state,
+        referencesToSortLive: sortToggleAuthorPersonReferencesToSortLive
       }
 
       

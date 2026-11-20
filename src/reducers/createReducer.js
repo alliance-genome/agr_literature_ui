@@ -81,6 +81,17 @@ export default function(state = initialState, action) {
         ...state,
         createAction: action.payload
       }
+    // Clearing at create-start (below) only covers a second create made without leaving the
+    // page. This covers arriving at Create with an alert still in the store from last time.
+    // updateAlert is reset alongside them: nothing reads it today, but it is the counter a
+    // dismissible alert here would key off, and leaving it monotonic would be a trap.
+    case 'RESET_CREATE_ALERT':
+      return {
+        ...state,
+        updateAlert: 0,
+        updateFailure: 0,
+        updateMessages: []
+      }
     case 'RESET_CREATE_REDIRECT':
       console.log("reset create redirect");
       return {
@@ -104,16 +115,24 @@ export default function(state = initialState, action) {
         redirectCurie: action.payload,
         redirectToBiblio: true
       }
+    // Both create-loading actions are dispatched the moment a create starts, which is the
+    // right point to drop the previous attempt's alert. Without this, a message survives the
+    // create that produced it -- the curator comes back to Create later and reads a red error
+    // about a reference that was made minutes ago and is perfectly fine.
     case 'CREATE_SET_PMID_CREATE_LOADING':
       // console.log(action.payload);
       return {
         ...state,
+        updateFailure: 0,
+        updateMessages: [],
         createPmidLoading: true
       }
     case 'CREATE_SET_ALLIANCE_CREATE_LOADING':
       // console.log(action.payload);
       return {
         ...state,
+        updateFailure: 0,
+        updateMessages: [],
         createAllianceLoading: true
       }
     case 'UPDATE_BUTTON_CREATE_ALREADY_EXISTS':
@@ -133,7 +152,9 @@ export default function(state = initialState, action) {
       console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
       console.log('reducer value ' + action.payload.value);
       let newUpdateFailure = 0;
-      let newArrayUpdateMessages = state.updateMessages;
+      // copy, never alias: the pushes below would otherwise mutate the store in place, and
+      // for an untouched store that array is the module-level initialState singleton
+      let newArrayUpdateMessages = [...state.updateMessages];
       let redirectCurie = state.redirectCurie;
       let redirectToBiblio = false;
       let createPmidLoading = state.createPmidLoading;
@@ -147,9 +168,24 @@ export default function(state = initialState, action) {
 //       let hasChangeUpdateButton = state.referenceJsonHasChange;
       if (action.payload.responseMessage === "update success") {
         console.log('reducer UPDATE_BUTTON_CREATE ' + action.payload.responseMessage);
-        newArrayUpdateMessages = [];
-        redirectToBiblio = true;
-        redirectCurie = action.payload.value;
+        if (action.payload.value === null || action.payload.value === undefined) {
+          // The reference was created, but nothing usable came back to redirect to.
+          // Redirecting anyway is the silent failure this guard exists to stop: the curator
+          // lands on ?referenceCurie=null looking at an empty editor, with no error anywhere
+          // and no hint that the reference does exist. Report it instead, so a renamed field,
+          // a reverted response_model, or a new call site that forgets to name its id field
+          // announces itself the day it lands rather than months later.
+          const named = action.payload.subField ? ` ("${action.payload.subField}")` : '';
+          newArrayUpdateMessages.push(
+            `The reference was created, but the API response carried no identifier${named} to `
+            + `open it with, so it could not be displayed. Find it via search.`);
+          newUpdateFailure = 1;
+          console.log('Update success with no id to redirect to');
+        } else {
+          newArrayUpdateMessages = [];
+          redirectToBiblio = true;
+          redirectCurie = action.payload.value;
+        }
 //         getReferenceCurieFlagUpdateButton = true;
 //         hasChangeUpdateButton = {};
       } else {

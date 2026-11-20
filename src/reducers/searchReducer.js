@@ -19,7 +19,11 @@ import {
   SEARCH_LOAD_SAVED_SEARCH_STATE,
   SEARCH_SET_SEARCH_MODE,
   SEARCH_SET_ADVANCED_TOPIC_QUERY,
-  SEARCH_SET_ADVANCED_FACETS_VOCAB
+  SEARCH_SET_ADVANCED_FACETS_VOCAB,
+  SEARCH_SET_GRID_PREFERENCES,
+  SEARCH_APPLY_GRID_PREFERENCES,
+  SEARCH_SET_DISPLAY_PREFS,
+  SEARCH_SET_DISPLAY_PROFILE_NAME
 } from '../actions/searchActions';
 
 import _ from "lodash";
@@ -53,6 +57,7 @@ const initialState = {
     'pubmed_publication_status.keyword': INITIAL_FACETS_LIMIT,
     'retraction_status.keyword': INITIAL_FACETS_LIMIT,
     'authors.name.keyword': INITIAL_FACETS_LIMIT,
+    'resource_id.keyword': INITIAL_FACETS_LIMIT,
     'topics': INITIAL_FACETS_LIMIT,
     'confidence_levels': INITIAL_FACETS_LIMIT,
     'source_methods': INITIAL_FACETS_LIMIT,
@@ -80,7 +85,22 @@ const initialState = {
   // panel; 'advanced' uses the query builder. advancedTopicQuery holds the
   // builder's UI tree (null until the builder seeds a default).
   searchMode: 'facet',
-  advancedTopicQuery: null
+  advancedTopicQuery: null,
+  // Topic grid preferences (SCRUM: grid options in saved settings).
+  // gridPreferences is the grid's live mirror (checkbox toggles, topic/source
+  // visibility, column order + widths) that Save Current Search snapshots.
+  // gridPreferencesApplied = { prefs, nonce } is set only when a saved search
+  // restores grid prefs; the grid watches the nonce to apply them exactly once.
+  gridPreferences: null,
+  gridPreferencesApplied: null,
+  // Search-card display profile (SCRUM-6512). null = user has no loaded profile
+  // yet; the cards fall back to the built-in defaults (everything visible).
+  searchDisplayPrefs: null,
+  // Which saved layout the current display came from (null = built-in
+  // default) and whether it has been tweaked since (curator feedback: the
+  // page gave no indication of which layout you are looking at).
+  searchDisplayProfileName: null,
+  searchDisplayProfileDirty: false
 };
 
 // to ignore a warning about Unexpected default export of anonymous function
@@ -279,9 +299,11 @@ export default function(state = initialState, action) {
       }
 
     case SEARCH_SET_SEARCH_FACETS_LIMITS:
+      // Over the defaults: a saved search predating a facet (e.g. Journal /
+      // Resource, SCRUM-1463) has no limit for it, which hid its Show More.
       return {
         ...state,
-        searchFacetsLimits: action.payload.facetsLimits
+        searchFacetsLimits: {...initialState.searchFacetsLimits, ...action.payload.facetsLimits}
       }
 
     case SEARCH_SET_SORT_BY_PUBLISHED_DATE:
@@ -319,6 +341,39 @@ export default function(state = initialState, action) {
       return {
         ...state,
         advancedTopicQuery: action.payload
+      }
+
+    case SEARCH_SET_GRID_PREFERENCES:
+      return {
+        ...state,
+        gridPreferences: action.payload
+      }
+
+    case SEARCH_SET_DISPLAY_PREFS:
+      // Every prefs write marks the display as modified; the load/save/create
+      // flows dispatch SEARCH_SET_DISPLAY_PROFILE_NAME right after, which
+      // clears the flag — so only standalone tweaks leave it set.
+      return {
+        ...state,
+        searchDisplayPrefs: action.payload,
+        searchDisplayProfileDirty: true
+      }
+
+    case SEARCH_SET_DISPLAY_PROFILE_NAME:
+      return {
+        ...state,
+        searchDisplayProfileName: action.payload,
+        searchDisplayProfileDirty: false
+      }
+
+    case SEARCH_APPLY_GRID_PREFERENCES:
+      return {
+        ...state,
+        gridPreferences: action.payload,
+        gridPreferencesApplied: {
+          prefs: action.payload,
+          nonce: ((state.gridPreferencesApplied && state.gridPreferencesApplied.nonce) || 0) + 1
+        }
       }
 
         case 'SEARCH_SET_DATE_PUBMED_ADDED':

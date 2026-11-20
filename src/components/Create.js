@@ -5,6 +5,7 @@ import { useHistory } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
 
 import { api } from '../api';
+import { useVocabulary } from '../hooks/useVocabulary';
 
 import { setReferenceCurie } from '../actions/biblioActions';
 import { setGetReferenceCurieFlag } from '../actions/biblioActions';
@@ -14,6 +15,7 @@ import { setBiblioAction } from '../actions/biblioActions';
 import { changeCreateActionToggler } from '../actions/createActions';
 import { setCreateActionToggler } from '../actions/createActions';
 import { updateButtonCreate } from '../actions/createActions';
+import { resetCreateAlert } from '../actions/createActions';
 import { resetCreateRedirect } from '../actions/createActions';
 import { changeCreateField } from '../actions/createActions';
 import { changeCreatePmidField } from '../actions/createActions';
@@ -78,7 +80,10 @@ const CreatePubmed = () => {
     const subPath = 'reference/add/';
     // For alliance-only, we don't have a modCurie to check, so pass a placeholder
     const modCurieForCheck = allianceOnly ? 'Alliance:new' : (modPrefix + ':' + modIdent);
-    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
+    // subField 'curie' names the field to read the new reference's curie from: the reducer
+    // redirects to whatever this yields, so leaving it null sends the curator to
+    // ?referenceCurie=null on an otherwise successful create.
+    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, 'curie']
     dispatch(updateButtonCreate(arrayData, 'pmid', modCurieForCheck));
   }
 
@@ -154,7 +159,8 @@ const CreateAlliance = () => {
 
     // For alliance-only, we don't have a modCurie to check, so pass a placeholder
     const modCurieForCheck = allianceOnly ? 'Alliance:new' : (modPrefix + ':' + modIdent);
-    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, null]
+    // subField 'curie' -- see the note in the PMID create path above
+    let arrayData = [ accessToken, subPath, updateJson, 'POST', 0, null, 'curie']
     dispatch(updateButtonCreate(arrayData, 'alliance', modCurieForCheck))
   }
 
@@ -368,17 +374,15 @@ const CreateActionRouter = () => {
 
 const RowDivider = () => { return (<Row><Col>&nbsp;</Col></Row>); }
 
-const PERSON_XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
-const PERSON_STATUS_OPTIONS = ['active', 'retired', 'deceased'];
-const MockupCreatePersonTitle = 'Mockup only — not wired to the API';
-
 const classifyPersonInput = (raw) => {
   const trimmed = (raw || '').trim();
   if (!trimmed) return null;
   if (trimmed.startsWith('AGRKB:')) {
     return { endpoint: '/person/' + trimmed };
   }
-  if (PERSON_XREF_PREFIXES.some((p) => trimmed.startsWith(p + ':'))) {
+  // Any colon-bearing input (not AGRKB) is an xref curie, resolved by the backend
+  // (Biblio convention; no hardcoded prefix list).
+  if (trimmed.includes(':')) {
     return { endpoint: '/person/by_person_cross_reference/' + trimmed };
   }
   if (trimmed.includes('@')) {
@@ -388,6 +392,7 @@ const classifyPersonInput = (raw) => {
 };
 
 const CreatePerson = () => {
+  const history = useHistory();
   const [inputValue, setInputValue] = useState('');
   const [matches, setMatches] = useState(null);
   const [searchError, setSearchError] = useState('');
@@ -396,9 +401,65 @@ const CreatePerson = () => {
 
   const [displayName, setDisplayName] = useState('');
   const [status, setStatus] = useState('active');
+  const activeStatusVocab = useVocabulary('person_active_status');
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
+
+  const [createdMessage, setCreatedMessage] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreate = async () => {
+    // Checked here rather than left to the API: PersonSchemaPost requires
+    // display_name, and PersonNameSchemaCreate rejects a blank last_name, so a
+    // half-filled form is a round trip that can only fail.
+    const display = displayName.trim();
+    const first = firstName.trim();
+    const middle = middleName.trim();
+    const last = lastName.trim();
+    if (!display) {
+      setCreateError('display_name is required.');
+      return;
+    }
+    if ((first || middle) && !last) {
+      setCreateError('A name needs a last_name; fill it in or clear the other name fields.');
+      return;
+    }
+
+    setIsCreating(true);
+    setCreateError('');
+    setCreatedMessage('');
+    const body = { display_name: display, active_status: status };
+    // names is a nested child of the person create, so one POST makes both. Omitted
+    // entirely when no name parts were given -- an empty row would 422 on last_name.
+    if (last) {
+      body.names = [{
+        first_name: first || null,
+        middle_name: middle || null,
+        last_name: last,
+        is_primary: true,
+      }];
+    }
+    try {
+      const res = await api.post('/person/', body);
+      const curie = (res.data && typeof res.data === 'object') ? (res.data.curie ?? '') : '';
+      if (typeof curie === 'string' && curie) {
+        // Redirect to the new person, the same way creating a lab lands on its page.
+        history.push('/person?personCurie=' + encodeURIComponent(curie));
+        return;
+      }
+      // No curie came back — fall back to an on-page success message.
+      setCreatedMessage('Person created.');
+      setMatches(null);
+      setHasSearched(false);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setCreateError(typeof detail === 'string' ? detail : 'An unexpected error occurred.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const handleQuery = async () => {
     const classified = classifyPersonInput(inputValue);
@@ -510,8 +571,8 @@ const CreatePerson = () => {
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                {PERSON_STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                {activeStatusVocab.options.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </Form.Control>
             </Col>
@@ -544,11 +605,20 @@ const CreatePerson = () => {
             </Col>
           </Form.Group>
           <div style={{ marginTop: '1em' }}>
-            <Button variant="primary" disabled title={MockupCreatePersonTitle}>
-              Create (mockup)
+            <Button
+              variant="primary"
+              onClick={handleCreate}
+              disabled={isCreating || !displayName.trim()}
+            >
+              {isCreating ? <Spinner animation="border" size="sm" /> : <span>Create Person</span>}
             </Button>
-            <span style={{ color: '#888', marginLeft: 12 }}>{MockupCreatePersonTitle}</span>
           </div>
+          { createdMessage && (
+            <Alert variant="success" className="mt-2">{createdMessage}</Alert>
+          )}
+          { createError && (
+            <Alert variant="danger" className="mt-2">{createError}</Alert>
+          )}
         </Form>
       )}
     </Container>
@@ -748,6 +818,12 @@ const Create = () => {
     dispatch(setReferenceCurie(referenceCurie));
     history.push("/Biblio/?action=editor&referenceCurie=" + referenceCurie);
   }
+
+  // Mount only: the store is a module-level singleton with no route-level reset, so an alert
+  // from a previous visit would otherwise still be on screen when the curator comes back.
+  useEffect(() => {
+    dispatch(resetCreateAlert());
+  }, [dispatch]);
 
   useEffect(() => {
     if (createRedirectToBiblio) {

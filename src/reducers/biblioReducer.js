@@ -48,6 +48,8 @@ const initialState = {
   getReferenceCurieFlag: true,
   meshExpand: 'short',
   authorExpand: 'first',
+  authorReorderOpen: false,
+  authorReorderFullScreen: false,
   supplementExpand: 'tarball',
   hasPmid: false,
   updateAlert: 0,
@@ -291,6 +293,9 @@ export default function(state = initialState, action) {
         if (state.biblioUpdatingEntityAdd === 1) {
           entityModalTextUpdateButtonEntityAdd = '';
           getReferenceCurieFlagUpdateButtonEntityAdd = true; }
+      } else if (action.payload.conflictHandled) {
+        // 409 "tag already exists": shown in the caller's warning table, not the modal
+        console.log('Add skipped, tag already exists');
       } else {
         entityModalTextUpdateButtonEntityAdd += "<br>\n" + action.payload.responseMessage;
         console.log('Add failure ' + action.payload.responseMessage);
@@ -371,6 +376,17 @@ export default function(state = initialState, action) {
         referenceJsonHasChange: hasChangeUpdateButton,
         biblioUpdating: state.biblioUpdating - 1
       }
+    case 'BIBLIO_UPDATING_DONE':
+      // Decrement only. UPDATE_BUTTON_BIBLIO also raises the editor's alert, which is the wrong
+      // place for a failure the author reorder screen already shows in context: that alert renders
+      // inside BiblioEditor, hidden behind the reorder modal's backdrop while it matters, then
+      // surfaces on the editor afterwards. This keeps the counter contract (exactly one report per
+      // call) without the alert.
+      return {
+        ...state,
+        biblioUpdating: state.biblioUpdating - 1
+      }
+
     case 'SET_BIBLIO_UPDATING':
       console.log('SET_BIBLIO_UPDATING reducer ' + action.payload);
       return {
@@ -382,7 +398,12 @@ export default function(state = initialState, action) {
       return {
         ...state,
         updateAlert: 0,
-        updateMessages: []
+        updateMessages: [],
+        // updateFailure decides whether the alert renders as a failure, and nothing else ever
+        // reset it: UPDATE_BUTTON_BIBLIO only adds to it. So one failed save made every later
+        // alert in the session red, successful ones included. Dismissing the alert is the point
+        // at which the curator has acknowledged the failure, so it clears here with the rest.
+        updateFailure: 0
       }
 
     case 'FILE_UPLOAD_RESULT':
@@ -546,20 +567,15 @@ export default function(state = initialState, action) {
       let hasChangeAuthorFieldDelete = state.referenceJsonHasChange
       hasChangeAuthorFieldDelete[fieldIdAuthorDelete] = 'diff'
 
-      // this would correctly reorder down other authors, but then the deleted author has the same order as a renumbered one,
-      // and disappears, so ceri decided we should reorder with a separate call after editing, and purposely show the curators
-      // the pre-deletion author order in the UI
-      // let startingAuthorOrder = indexDomAuthorDelete + 1
-      // for (let authorReorderDict of deleteAuthorChange) {
-      //   if (authorReorderDict['order'] > startingAuthorOrder) {
-      //     authorReorderDict['needsChange'] = true;
-      //     authorReorderDict['order'] -= 1 } }
+      // Deleting does not renumber the remaining authors here: curators are shown the
+      // pre-deletion order until they submit, and the save thunk then issues a single
+      // POST /author/reorder that closes the gap.
 
       return {
         ...state,
+        referenceJsonHasChange: hasChangeAuthorFieldDelete,
         referenceJsonLive: {
           ...state.referenceJsonLive,
-          referenceJsonHasChange: hasChangeAuthorFieldDelete,
           [fieldAuthorDelete]: deleteAuthorChange
         }
       }
@@ -605,27 +621,6 @@ export default function(state = initialState, action) {
       else if (subfieldAuthorInfo === 'affiliations') {
 //         let subindexDomAuthorInfo = parseInt(authorInfoArray[3])
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo][subindexDomAuthorInfo] = authorInfoNewValue; }
-      else if (subfieldAuthorInfo === 'author_order') {
-        let oldAuthorOrder = indexDomAuthorInfo + 1
-        let newAuthorOrder = parseInt(authorInfoNewValue)
-        // console.log('reorder ' + oldAuthorOrder + " into " + newAuthorOrder)
-        // authors have to be reordered based on their order field, not the store array index, because second+ reorders would not work
-        for (let authorReorderDict of newAuthorInfoChange) {
-          // console.log({ authorReorderDict, newAuthorInfoChange, oldAuthorOrder });
-          if (newAuthorOrder < oldAuthorOrder) {
-            if (authorReorderDict['author_order'] === oldAuthorOrder) {
-              authorReorderDict['needsChange'] = true;
-              authorReorderDict['author_order'] = newAuthorOrder }
-            else if ( (authorReorderDict['author_order'] >= newAuthorOrder) && (authorReorderDict['author_order'] < oldAuthorOrder) ) {
-              authorReorderDict['needsChange'] = true;
-              authorReorderDict['author_order'] += 1 } }
-          else if (newAuthorOrder > oldAuthorOrder) {
-            if (authorReorderDict['author_order'] === oldAuthorOrder) {
-              authorReorderDict['needsChange'] = true;
-              authorReorderDict['author_order'] = newAuthorOrder }
-            else if ( (authorReorderDict['author_order'] <= newAuthorOrder) && (authorReorderDict['author_order'] > oldAuthorOrder) ) {
-              authorReorderDict['needsChange'] = true;
-              authorReorderDict['author_order'] -= 1 } } } }
       else {
         newAuthorInfoChange[indexAuthorInfo][subfieldAuthorInfo] = authorInfoNewValue; }
       // console.log(newAuthorInfoChange)
@@ -829,8 +824,22 @@ export default function(state = initialState, action) {
               revertValue[indexStoreAuthorRevert] = revertNewAuthorDict
               break } } } }
       let hasChangeFieldRevert = state.referenceJsonHasChange
+      // Dirty keys are space-joined paths -- 'title', 'authors 3', 'authors 3 last_name' -- so a
+      // bare startsWith compared characters where it meant to compare path segments: reverting
+      // 'authors 3' also cleared 'authors 30 name', 'authors 31 orcid', and so on for every author
+      // 10..19, 30..39. Those edits stayed in referenceJsonLive and still saved, but the dirty map
+      // no longer knew about them, so on a 30+ author reference a single revert could empty it
+      // while real edits were pending -- greying the Update button and opening the reorder gate,
+      // whose refetch then discarded them.
+      //
+      // Requiring the following space makes 'authors 3 ' fail against 'authors 30 name', where the
+      // next character is '0'. The equality arm keeps whole-field reverts ('title') and the delete
+      // keys, which have no subfield segment. date_published/_start/_end are the same collision
+      // waiting to happen; they are safe only because date reverts use BIBLIO_REVERT_DATE_PUBLISHED
+      // and never reach this loop, and this makes them safe if that ever changes.
+      const revertPrefix = fieldIdRevert + ' '
       for (const fieldRevertEntry in hasChangeFieldRevert) {
-        if (fieldRevertEntry.startsWith(fieldIdRevert)) {
+        if ((fieldRevertEntry === fieldIdRevert) || fieldRevertEntry.startsWith(revertPrefix)) {
           delete hasChangeFieldRevert[fieldRevertEntry] } }
       const pmidBoolRevert = checkHasPmid(state.referenceJsonLive)
       return {
@@ -902,11 +911,11 @@ export default function(state = initialState, action) {
         ...state,
         referenceJsonDb: {
           ...state.referenceJsonDb,
-          [authorInfoNewAffArray]: newAuthorAffiliationDb
+          [fieldAuthorInfoNewAff]: authorInfoNewAffDb
         },
         referenceJsonLive: {
           ...state.referenceJsonLive,
-          [authorInfoNewAffArray]: newAuthorAffiliationLive
+          [fieldAuthorInfoNewAff]: authorInfoNewAffLive
         }
       }
     case 'CHANGE_BIBLIO_MESH_EXPAND_TOGGLER':
@@ -915,6 +924,29 @@ export default function(state = initialState, action) {
         ...state,
         meshExpand: action.payload
       }
+    case 'BIBLIO_AUTHOR_REORDER_OPEN':
+      // Deliberately not a value of authorExpand (BiblioDisplay reads that same field and has no
+      // matching branch) and not a biblioAction (that one is URL-synced via ?action= and bound to
+      // the action toggler this screen has to suppress). See the 2026-08-25 design.
+      return {
+        ...state,
+        authorReorderOpen: true
+      }
+
+    case 'BIBLIO_AUTHOR_REORDER_CLOSE':
+      return {
+        ...state,
+        authorReorderOpen: false
+      }
+
+    case 'BIBLIO_AUTHOR_REORDER_FULL_SCREEN':
+      // Session-level so reopening does not flash the modal before the remembered view loads; the
+      // durable copy lives in the biblio_author_reorder person_setting.
+      return {
+        ...state,
+        authorReorderFullScreen: action.payload
+      }
+
     case 'CHANGE_BIBLIO_AUTHOR_EXPAND_TOGGLER':
       // console.log(action.payload);
       return {
@@ -962,6 +994,10 @@ export default function(state = initialState, action) {
         referenceJsonDb: {},
         referenceJsonHasChange: {},
         referenceCurie: action.payload,
+        // reference-scoped, like everything else cleared here: reordering reference A must not
+        // still be open when reference B loads. authorReorderFullScreen deliberately survives --
+        // it is a remembered preference, not reference state.
+        authorReorderOpen: false,
         referenceFiles: [],
         referenceFilesLoading: false,
         topicEntityTags: [],
@@ -1150,6 +1186,15 @@ export default function(state = initialState, action) {
         ...state,
         isFetchingTaxonData: false,
         taxonDataError: action.payload.error
+      };
+
+    case 'MERGE_TAXON_NAMES':
+      return {
+        ...state,
+        curieToNameTaxon: {
+          ...(state.curieToNameTaxon || {}),
+          ...action.payload.curieToName
+        }
       };
 
     case 'CLEAR_TAXON_DATA':

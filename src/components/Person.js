@@ -11,19 +11,11 @@ import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 
 import { api } from '../api';
-import PersonCcDisplay from './person/PersonCcDisplay';
 import PersonEditor from './person/PersonEditor';
-import PersonCcEditor from './person/PersonCcEditor';
-import PersonJson from './person/PersonJson';
-import PersonCompact from './person/PersonCompact';
-import PersonTree from './person/PersonTree';
-import PersonWbDisplay from './person/PersonWbDisplay';
-import PersonWbEditor from './person/PersonWbEditor';
+import PersonDisplay from './person/PersonDisplay';
 
-const VALID_TABS = ['editor', 'ccdisplay', 'cceditor', 'json', 'compact', 'tree', 'wbdisplay', 'wbeditor'];
-const DEFAULT_TAB = 'editor';
-
-const XREF_PREFIXES = ['ORCID', 'WB', 'ZFIN', 'XenBase'];
+const VALID_TABS = ['display', 'editor'];
+const DEFAULT_TAB = 'display';
 
 const classifyInput = (raw) => {
   const trimmed = (raw || '').trim();
@@ -32,7 +24,10 @@ const classifyInput = (raw) => {
     // Match the Biblio "Query exact ID" convention: do not encode curies (colon must stay literal).
     return { kind: 'curie', value: trimmed, urlParam: 'personCurie', endpoint: '/person/' + trimmed };
   }
-  if (XREF_PREFIXES.some((p) => trimmed.startsWith(p + ':'))) {
+  // Any colon-bearing input (not AGRKB, handled above) is treated as an xref curie and
+  // resolved by the backend — matching Biblio's "AGRKB -> reference, else -> cross_reference"
+  // convention. No hardcoded prefix list, so new prefixes (e.g. SGD) and casing just work.
+  if (trimmed.includes(':')) {
     return {
       kind: 'xref',
       value: trimmed,
@@ -87,7 +82,7 @@ const Person = () => {
         } else {
           multi = res.data;
         }
-      } else if (res.data && typeof res.data === 'object' && (res.data.curie || res.data.person_id)) {
+      } else if (res.data && typeof res.data === 'object' && res.data.curie) {
         record = res.data;
       }
 
@@ -262,34 +257,18 @@ const Person = () => {
                 id="person-view-tabs"
                 className="mb-3"
               >
+                <Tab eventKey="display" title="Display">
+                  {/* Keyed by curie like the editor: Display holds fetched lineage
+                      in component state, so without a remount a new search would
+                      show the previous person's connections under the new header
+                      until the requests land. */}
+                  {activeTab === 'display' && (
+                    <PersonDisplay key={personData.curie} person={personData} />
+                  )}
+                </Tab>
                 <Tab eventKey="editor" title="Editor">
                   {activeTab === 'editor' && (
                     <PersonEditor key={personData.curie} person={personData} />
-                  )}
-                </Tab>
-                <Tab eventKey="ccdisplay" title="CC Display">
-                  {activeTab === 'ccdisplay' && <PersonCcDisplay person={personData} />}
-                </Tab>
-                <Tab eventKey="cceditor" title="CC Editor">
-                  {activeTab === 'cceditor' && (
-                    <PersonCcEditor key={personData.curie} person={personData} />
-                  )}
-                </Tab>
-                <Tab eventKey="json" title="JSON">
-                  {activeTab === 'json' && <PersonJson person={personData} />}
-                </Tab>
-                <Tab eventKey="compact" title="Compact">
-                  {activeTab === 'compact' && <PersonCompact person={personData} />}
-                </Tab>
-                <Tab eventKey="tree" title="Tree">
-                  {activeTab === 'tree' && <PersonTree person={personData} />}
-                </Tab>
-                <Tab eventKey="wbdisplay" title="WB display">
-                  {activeTab === 'wbdisplay' && <PersonWbDisplay person={personData} />}
-                </Tab>
-                <Tab eventKey="wbeditor" title="WB editor">
-                  {activeTab === 'wbeditor' && (
-                    <PersonWbEditor key={personData.curie} person={personData} />
                   )}
                 </Tab>
               </Tabs>

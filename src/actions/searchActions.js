@@ -1,6 +1,7 @@
 import axios from "axios";
 import { api } from "../api";
 import { compileAdvancedQuery } from "../components/search/advanced/advancedQueryModel";
+import { xrefUrl } from "../utils/xrefCurie";
 //import {useDispatch, useSelector} from 'react-redux';
 
 export const SEARCH_SET_SEARCH_RESULTS_COUNT = 'SEARCH_SET_SEARCH_RESULTS_COUNT';
@@ -42,8 +43,19 @@ export const SEARCH_LOAD_SAVED_SEARCH_STATE = 'SEARCH_LOAD_SAVED_SEARCH_STATE';
 export const SEARCH_SET_SEARCH_MODE = 'SEARCH_SET_SEARCH_MODE';
 export const SEARCH_SET_ADVANCED_TOPIC_QUERY = 'SEARCH_SET_ADVANCED_TOPIC_QUERY';
 export const SEARCH_SET_ADVANCED_FACETS_VOCAB = 'SEARCH_SET_ADVANCED_FACETS_VOCAB';
+export const SEARCH_SET_GRID_PREFERENCES = 'SEARCH_SET_GRID_PREFERENCES';
+export const SEARCH_APPLY_GRID_PREFERENCES = 'SEARCH_APPLY_GRID_PREFERENCES';
+export const SEARCH_SET_DISPLAY_PREFS = 'SEARCH_SET_DISPLAY_PREFS';
+export const SEARCH_SET_DISPLAY_PROFILE_NAME = 'SEARCH_SET_DISPLAY_PROFILE_NAME';
 
-const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions","data_novelty"];
+const TET_FACETS_LIST = ["topics", "confidence_levels", "source_methods", "source_evidence_assertions", "data_novelty", "data_context", "large_scale_tag"];
+
+// Map a TET facet label to its nested ES field. Most labels are plural and
+// strip the trailing 's' (topics -> topic); data_novelty, data_context and
+// large_scale_tag are already the field name.
+const NON_PLURAL_TET_FACETS = ["data_novelty", "data_context", "large_scale_tag"];
+const tetFacetField = (label) =>
+  `topic_entity_tags.${NON_PLURAL_TET_FACETS.includes(label) ? label : label.slice(0, -1)}.keyword`;
 
 // Upper bound for the Advanced query builder's value dropdowns. The facet panel
 // paginates (INITIAL_FACETS_LIMIT with Show More/All), and every search overwrites
@@ -117,6 +129,11 @@ export const fetchAdvancedFacetsVocab = () => {
       acc[key] = ADVANCED_VOCAB_LIMIT;
       return acc;
     }, {});
+    // Workflow-tag vocabulary for the builder's Workflow condition dropdown
+    // (SCRUM-6398). The workflow categories are post-processed groupings of ONE
+    // nested aggregation, so the lift goes on that aggregation's key — category
+    // keys (file_workflow, ...) are not ES aggregation keys and would be inert.
+    facets_limits['workflow_tags.workflow_tag_id.keyword'] = ADVANCED_VOCAB_LIMIT;
     // Source methods are aggregated only within a corpus/MOD scope, so the aggregation
     // returns them only when a MOD is selected. The dedicated endpoint carries the full
     // list with its owning MOD, so use it to fill/scope source methods when the
@@ -130,7 +147,7 @@ export const fetchAdvancedFacetsVocab = () => {
       })
         .then(res => (res.data && res.data.aggregations) ? res.data.aggregations : {})
         .catch(() => ({})),
-      api.get('/topic_entity_tag/source/all')
+      api.get('/tag_source/all')
         .then(res => Array.isArray(res.data) ? res.data : [])
         .catch(() => [])
     ]).then(([aggregations, sources]) => {
@@ -149,8 +166,11 @@ export const fetchAdvancedFacetsVocab = () => {
           const key = item && item.source_method ? String(item.source_method) : '';
           if (!key || seen.has(key)) continue;
           if (hasMod) {
-            const provider = item.data_provider || item.secondary_data_provider_abbreviation;
-            if (!modSet.has(provider)) continue;
+            // A source belongs to the MOD that is its secondary data provider;
+            // data_provider is where the data came from and can be a third party
+            // such as GEO (SCRUM-6338).
+            const owner = item.secondary_data_provider_abbreviation || item.data_provider;
+            if (!modSet.has(owner)) continue;
           }
           seen.add(key);
           sourceBuckets.push({ key });
@@ -171,7 +191,7 @@ function processCombinedTETFacets(data, tetNestedFacetsValues) {
         Object.fromEntries(
             non_empty_facets.map(
 
-                tet_facet_label => [tet_facet_label === 'data_novelty' ? `topic_entity_tags.${tet_facet_label}.keyword`: `topic_entity_tags.${tet_facet_label.slice(0, -1)}.keyword`, data[tet_facet_label][0]]
+                tet_facet_label => [tetFacetField(tet_facet_label), data[tet_facet_label][0]]
             )
         )
     );
@@ -215,7 +235,7 @@ const getSearchParams = (state) => {
   const negated_facets= state.search.searchExcludedFacetsValues;
   // TET (nested) negated facets are routed through tet_facets_negative_values below, not the
   // flat negated_facets_values (which is only for non-nested facets).
-  const tetNegatedKeys = ["confidence_levels", "source_methods", "source_evidence_assertions"];
+  const tetNegatedKeys = ["confidence_levels", "data_context", "source_methods", "source_evidence_assertions"];
   const negated_facets_values = {};
   Object.keys(negated_facets).forEach(key => {
     if (!tetNegatedKeys.includes(key)) {
@@ -231,9 +251,7 @@ const getSearchParams = (state) => {
   } else {
       TET_FACETS_LIST.forEach(key => {
 	  if (data[key]) {
-	      const facetType = key.slice(0, -1); // topics => topic
-	      const keyword = `topic_entity_tags.${facetType}.keyword`;
-	      processSingleFacet(data[key], keyword, tetNestedFacetsValues);
+	      processSingleFacet(data[key], tetFacetField(key), tetNestedFacetsValues);
 	  }
       });
   }
@@ -244,7 +262,8 @@ const getSearchParams = (state) => {
   // excluded level with the selected topic/entity terms so a reference is dropped only when it
   // has a tag that is both the selected topic AND the excluded level (a NEG tag on a different
   // topic does not remove it); with no positive TET facet it falls back to any tag at that
-  // level. All apply in both single- and multi-tag modes.
+  // level. Data context exclusion is topic-scoped the same way. All apply in both single-
+  // and multi-tag modes.
   // All negated TET keys are carried in ONE merged object: the backend reads only
   // tet_facets_negative_values[0] and turns each source/SEA key into its own independent
   // must_not nested clause, so splitting them into separate array entries would silently drop
@@ -258,6 +277,9 @@ const getSearchParams = (state) => {
   }
   if (negated_facets.confidence_levels && negated_facets.confidence_levels.length > 0) {
       negatedTetEntry["topic_entity_tags.confidence_level.keyword"] = negated_facets.confidence_levels;
+  }
+  if (negated_facets.data_context && negated_facets.data_context.length > 0) {
+      negatedTetEntry["topic_entity_tags.data_context.keyword"] = negated_facets.data_context;
   }
   if (Object.keys(negatedTetEntry).length > 0) {
       tetNestedNegatedFacetsValues.push(negatedTetEntry);
@@ -471,11 +493,7 @@ export const filterFacets = () => {
 export const searchXref = (xref, setUrl) => {
   api.get('/cross_reference/'+xref)
   .then(res => {
-    if(res.data.pages){
-      setUrl(res.data.pages[0].url)
-    }else{
-      setUrl(res.data.url);
-    }
+    setUrl(xrefUrl(res.data));
   })
   .catch();
 }
@@ -716,4 +734,38 @@ export const setSearchMode = (mode) => ({
 export const setAdvancedTopicQuery = (tree) => ({
   type: SEARCH_SET_ADVANCED_TOPIC_QUERY,
   payload: tree
+});
+
+// Topic grid preferences (checkbox toggles, topic/source visibility, column
+// order and widths). setGridPreferences is the grid's live mirror into Redux —
+// it's what "Save Current Search" captures. applyGridPreferences is dispatched
+// when a saved search is loaded: it also bumps gridPreferencesApplied's nonce,
+// which the grid watches to overwrite its own state with the restored values.
+export const setGridPreferences = (prefs) => ({
+  type: SEARCH_SET_GRID_PREFERENCES,
+  payload: prefs
+});
+
+export const applyGridPreferences = (prefs) => ({
+  type: SEARCH_APPLY_GRID_PREFERENCES,
+  payload: prefs
+});
+
+// Search-card display profile (SCRUM-6512): section order/visibility, per-prefix
+// xref selection, icon visibility and the author->person link. Lives in its own
+// person_settings namespace ('search_display'), deliberately separate from saved
+// searches — a display profile says how cards LOOK, not what to search for.
+export const setSearchDisplayPrefs = (prefs) => ({
+  type: SEARCH_SET_DISPLAY_PREFS,
+  payload: prefs
+});
+
+// The name of the saved layout the current display came from (null = the
+// built-in default), shown next to the Layout button so curators can tell
+// which layout they are looking at (curator feedback on SCRUM-6512).
+// Dispatching this also clears the modified flag that every prefs change
+// sets, so "loaded/saved X" and "X, then tweaked" are distinguishable.
+export const setSearchDisplayProfileName = (name) => ({
+  type: SEARCH_SET_DISPLAY_PROFILE_NAME,
+  payload: name
 });

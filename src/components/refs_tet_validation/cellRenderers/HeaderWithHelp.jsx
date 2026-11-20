@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons';
+import HeaderHelpIcon from './HeaderHelpIcon';
 
 /**
  * Custom AgGrid `headerComponent` that adds a small ? icon next to the column
@@ -20,7 +19,11 @@ export default function HeaderWithHelp(params) {
     showColumnMenu,
     progressSort,
   } = params;
-  const help = column?.getColDef?.()?.headerTooltip;
+  // Sourced from headerComponentParams.help, not colDef.headerTooltip: the
+  // latter also makes AgGrid attach a native hover tooltip to the whole header
+  // cell, which is the inconsistent mouseover behaviour the click popover
+  // replaces (SCRUM-6330).
+  const help = params?.help;
   const menuButtonRef = useRef(null);
   const filterButtonRef = useRef(null);
   const [sortDir, setSortDir] = useState(column?.getSort?.() || null);
@@ -87,16 +90,7 @@ export default function HeaderWithHelp(params) {
       {sortDir === 'desc' && (
         <span className="ag-icon ag-icon-desc" aria-label="descending" />
       )}
-      {help && (
-        <span
-          className="tetv-header-help"
-          title={help}
-          aria-label={help}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <FontAwesomeIcon icon={faCircleQuestion} />
-        </span>
-      )}
+      <HeaderHelpIcon help={help} label={displayName} />
       {filterAllowed && (
         <span
           ref={filterButtonRef}

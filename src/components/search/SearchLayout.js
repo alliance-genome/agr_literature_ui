@@ -13,6 +13,8 @@ import SearchOptions from "./SearchOptions";
 import BreadCrumbs from "./BreadCrumbs";
 import SearchPagination from "./SearchPagination";
 import AdvancedTopicQueryBuilder from './advanced/AdvancedTopicQueryBuilder';
+import SearchDisplaySettings from './settings/SearchDisplaySettings';
+import useSearchDisplayProfile from './settings/useSearchDisplayProfile';
 import { compileAdvancedQuery, flattenAdvancedForGrid } from './advanced/advancedQueryModel';
 import TetValidationGrid from '../refs_tet_validation/TetValidationGrid';
 import TetGridErrorBoundary from '../refs_tet_validation/TetGridErrorBoundary';
@@ -38,6 +40,12 @@ const SearchLayout = () => {
     const [view, setView] = useState('list'); // 'list' | 'grid'
     const [hasOpenedTopicGrid, setHasOpenedTopicGrid] = useState(false);
     const [showBackToTop, setShowBackToTop] = useState(false);
+
+    // Load the user's default card display profile once per session, from here
+    // rather than the Display settings button: the button unmounts with the
+    // results switchbar on every search, and loading there re-applied the
+    // default over the user's working profile (SCRUM-6512 review).
+    useSearchDisplayProfile();
 
     // Persisted topic-grid UI state — topic/source multiselects, the display
     // checkboxes and the ID-prefix filter. The grid is torn down on every
@@ -154,11 +162,18 @@ const SearchLayout = () => {
         if (nonEmpty(fv.source_methods)) f.source_methods = fv.source_methods;
         if (nonEmpty(fv.source_evidence_assertions)) f.source_evidence_assertions = fv.source_evidence_assertions;
         if (nonEmpty(fv.data_novelty)) f.data_novelty = fv.data_novelty;
+        if (nonEmpty(fv.data_context)) f.data_context = fv.data_context;
+        // fv.large_scale_tag is deliberately NOT forwarded: the grid reads
+        // tags from the database, and large_scale_tag only exists on the
+        // synthetic summary tags the search indexer mints (SCRUM-6614) -
+        // there is no DB column to filter on, and the grid should keep
+        // showing a large-scale paper's real tags in full.
         if (nonEmpty(fv.entity_types)) f.entity_types = fv.entity_types;
         if (nonEmpty(fv.entities)) f.entities = fv.entities;
         if (nonEmpty(neg.confidence_levels)) f.negated_confidence_levels = neg.confidence_levels;
         if (nonEmpty(neg.source_methods)) f.negated_source_methods = neg.source_methods;
         if (nonEmpty(neg.source_evidence_assertions)) f.negated_source_evidence_assertions = neg.source_evidence_assertions;
+        if (nonEmpty(neg.data_context)) f.negated_data_context = neg.data_context;
         // MOD scope: the corpus facet selection (in-corpus / needs-review /
         // in-corpus-or-needs-review), computed as corpusMods at the top of this
         // memo. The grid shows only the selected MOD's tags, so a shared reference
@@ -273,40 +288,11 @@ const SearchLayout = () => {
                     </Col>
                 </Row>
                 <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
-                {/* Advanced Topic query builder (SCRUM-6228-2): in advanced mode the
-                    builder is lifted out of the narrow facet sidebar and rendered as a
-                    full-width band here, above the results, so it gets the horizontal
-                    room its tag/field/value layout needs. The facet sidebar below still
-                    holds the mode toggle and the other facets (corpus/MOD, dates,
-                    category, workflow) that continue to apply on top of the query. */}
-                {searchMode === 'advanced' && (
-                    <>
-                        <Row style={{ margin: 0 }}>
-                            <Col style={{ padding: 0 }}>
-                                <div style={{
-                                    border: '1px solid #cfe2ff',
-                                    borderRadius: '8px',
-                                    backgroundColor: '#fbfdff',
-                                }}>
-                                    <div style={{
-                                        padding: '6px 12px',
-                                        borderBottom: '1px solid #cfe2ff',
-                                        backgroundColor: '#eef5ff',
-                                        borderTopLeftRadius: '8px',
-                                        borderTopRightRadius: '8px',
-                                        fontWeight: 600,
-                                        textAlign: 'left',
-                                    }}>
-                                        Advanced Topic query
-                                    </div>
-                                    <AdvancedTopicQueryBuilder/>
-                                </div>
-                            </Col>
-                        </Row>
-                        <Row><Col style={{ padding: 0 }}>&nbsp;</Col></Row>
-                    </>
-                )}
-                {/* The flex container wrapping both the facet panel and search results */}
+                {/* The flex container wrapping both the facet panel and search results.
+                    The Advanced Topic query builder (SCRUM-6333) is rendered inside the
+                    results column below, at the top of the results, so the facet sidebar
+                    stays visible to its left instead of being pushed down by a full-width
+                    band above the whole page. */}
                 <Row style={{ margin: 0 }}>
                     <Col style={{ padding: 0 }}>
                         {facetsCollapsed && (
@@ -424,8 +410,33 @@ const SearchLayout = () => {
                                 padding: 0,
                                 marginLeft: isMobile ? 0 : undefined
                             }}>
+                                {/* Advanced Topic query builder (SCRUM-6333): anchored at
+                                    the top of the results column so the facet sidebar stays
+                                    visible to its left and the results flow directly
+                                    beneath it (was a full-width band above the page). */}
+                                {searchMode === 'advanced' && (
+                                    <div style={{
+                                        border: '1px solid #cfe2ff',
+                                        borderRadius: '10px',
+                                        backgroundColor: '#fbfdff',
+                                        boxShadow: '0 1px 4px rgba(13, 110, 253, 0.08)',
+                                        marginBottom: '16px',
+                                    }}>
+                                        {/* Title, help and the sticky preview/actions
+                                            footer are rendered inside the builder. No
+                                            overflow:hidden here so the footer's
+                                            position:sticky keeps working. */}
+                                        <AdvancedTopicQueryBuilder/>
+                                    </div>
+                                )}
                                 {referenceIds.length > 0 && (
-                                    <div className="tetv-view-switchbar">
+                                    <div className="tetv-view-switchbar" style={{ alignItems: 'center' }}>
+                                        {/* Equal flex spacers keep the view toggle centered over
+                                            the results (a margin-left:auto on the Layout button
+                                            absorbed the centering and jammed the toggle against
+                                            the facets); the Layout button sits at the far right,
+                                            separate from the saved-search controls (SCRUM-6512). */}
+                                        <div style={{ flex: '1 1 0' }} />
                                         <ToggleButtonGroup
                                             type="radio"
                                             name="tetv-view"
@@ -441,6 +452,9 @@ const SearchLayout = () => {
                                                 <FontAwesomeIcon icon={faThLarge} /> Topic grid
                                             </ToggleButton>
                                         </ToggleButtonGroup>
+                                        <div style={{ flex: '1 1 0', display: 'flex', justifyContent: 'flex-end' }}>
+                                            <SearchDisplaySettings />
+                                        </div>
                                     </div>
                                 )}
                                 <div style={{ display: view === 'list' ? 'block' : 'none' }}>

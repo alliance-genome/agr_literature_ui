@@ -5,6 +5,7 @@ import { faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons'
 import { Modal, Button, Form, ProgressBar, Spinner } from 'react-bootstrap';
 import { api } from '../../../api';
 import SpeciesPicker from './SpeciesPicker';
+import { CURATOR_VALIDATION_DATA_CONTEXT } from '../../biblio/topic_entity_tag/dataContextDefaults';
 import {
   defaultSpeciesCurieForMod,
   speciesName,
@@ -108,12 +109,14 @@ export default function BulkValidationModal({
       reference_curie: ref.curie,
       topic: topicCurie,
       negated,
-      topic_entity_tag_source_id: topicEntitySourceId,
+      tag_source_id: topicEntitySourceId,
       force_insertion: true,
       entity: null,
       entity_type: null,
       species: species?.curie || null,
       data_novelty: 'ATP:0000335',
+      // Matches CURATOR_VALIDATION_DATA_CONTEXT on the server's /validate path.
+      data_context: CURATOR_VALIDATION_DATA_CONTEXT,
       confidence_score: null,
       confidence_level: null,
       note: note.trim() || null,
@@ -131,6 +134,9 @@ export default function BulkValidationModal({
         curation_status: curStatus || null,
         curation_tag: curTag || null,
         note: curNote.trim() || null,
+        // SCRUM-6518: attribute this manual edit to the ABC curator source.
+        // Submission is already gated on topicEntitySourceId (noSource above).
+        tag_source_id: topicEntitySourceId,
       };
       await api.post('/curation_status/', curPayload);
     }
@@ -192,7 +198,7 @@ export default function BulkValidationModal({
   const disabledReason = noSource
     ? 'Curator source not yet loaded — the grid is still resolving your MOD-specific TET source.'
     : noEligible
-    ? 'All selected references already have a professional-biocurator assessment for this topic.'
+    ? 'All selected references already have a professional-biocurator assessment from your MOD for this topic.'
     : null;
 
   return (
@@ -236,7 +242,7 @@ export default function BulkValidationModal({
                 <dd>{references.length}</dd>
                 <dt>To be assessed</dt>
                 <dd>{eligible.length}</dd>
-                <dt>Already assessed (will be skipped)</dt>
+                <dt>Already assessed by your MOD (will be skipped)</dt>
                 <dd style={skipped.length === 0 ? noneStyle : undefined}>
                   {skipped.length === 0 ? 'none' : skipped.length}
                 </dd>

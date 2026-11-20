@@ -333,6 +333,15 @@ export const setMergeUpdating = (payload) => {
   };
 };
 
+// Surfaces a pre-flight refusal in the existing update alert without marking a transfer as
+// having happened, so the curator sees why nothing was sent and the Transfer button stays live.
+export const setMergeBlocked = (messages) => {
+  return {
+    type: 'SET_MERGE_BLOCKED',
+    payload: messages
+  };
+};
+
 export const setDataTransferHappened = (payload) => {
   return {
     type: 'SET_DATA_TRANSFER_HAPPENED',

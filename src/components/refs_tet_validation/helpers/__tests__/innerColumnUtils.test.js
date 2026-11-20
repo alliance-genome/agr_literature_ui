@@ -14,7 +14,7 @@ function tet(overrides = {}) {
     note: null,
     confidence_score: null,
     confidence_level: null,
-    topic_entity_tag_source: {
+    tag_source: {
       source_method: 'manual',
       secondary_data_provider_abbreviation: 'WB',
     },
@@ -28,7 +28,7 @@ describe('innerColumnFilterValues', () => {
       tet({ topic_entity_tag_id: 1 }),
       tet({
         topic_entity_tag_id: 2,
-        topic_entity_tag_source: {
+        tag_source: {
           source_method: 'textpresso',
           secondary_data_provider_abbreviation: 'WB',
         },
@@ -112,7 +112,7 @@ describe('compareInnerColumnValues', () => {
     const positive = [
       tet({
         negated: false,
-        topic_entity_tag_source: {
+        tag_source: {
           source_method: 'manual',
           secondary_data_provider_abbreviation: 'WB',
           validation_type: 'professional_biocurator',

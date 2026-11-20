@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import HelpDocLink, { HELP_DOC_URLS } from "../../HelpDocLink";
 import { api } from "../../../api";
 import {
   changeFieldEntityEntityList,
@@ -298,7 +299,7 @@ const TopicEntityCreateSGD = () => {
     const entityResult = entityResultList[0];
       
     let updateJson = initializeUpdateJson(refCurie, row);
-    delete updateJson["topic_entity_tag_source_id"];
+    delete updateJson["tag_source_id"];
     delete updateJson["reference_curie"];
 
     updateJson["entity_id_validation"] = row.entityTypeSelect === "" ? null : "alliance";
@@ -311,7 +312,8 @@ const TopicEntityCreateSGD = () => {
     if (entityResult?.curie) {
       updateJson["entity"] = entityResult.curie;
     }
-    updateJson["updated_by"] = uid;
+    // updated_by is stamped server-side from the authenticated user; the uid
+    // here is the Cognito token sub, which is not a users.id (SCRUM-6459).
 
     const array = [accessToken, subPath, updateJson, method];
     dispatch(setBiblioUpdatingEntityAdd(1));
@@ -472,7 +474,7 @@ const TopicEntityCreateSGD = () => {
     updateJson["confidence_score"] = null;  
     updateJson["confidence_level"] = null;
     updateJson["data_novelty"] = null;
-    updateJson["topic_entity_tag_source_id"] = topicEntitySourceId;
+    updateJson["tag_source_id"] = topicEntitySourceId;
 
     if (row.tetdisplayTagSelect && row.tetdisplayTagSelect !== "") {
        updateJson["display_tag"] = row.tetdisplayTagSelect;
@@ -555,7 +557,8 @@ const TopicEntityCreateSGD = () => {
       {/* Title and "No TET data" Button */}
       <Row className="form-group row mb-3" style={{ alignItems: "center" }}>
         <Col sm="12" style={{ display: "flex", alignItems: "center" }}>
-          <h3 style={{ marginRight: "10px" }}>Entity and Topic Addition</h3>
+          <h3 style={{ marginRight: "4px" }}>Entity and Topic Addition</h3>
+          <HelpDocLink url={HELP_DOC_URLS.topicEntityTagging} title="Open the Topic and Entity Tagging help documentation" style={{ marginRight: "10px" }} />
           <Button
             variant="outline-primary"
             size="sm"
