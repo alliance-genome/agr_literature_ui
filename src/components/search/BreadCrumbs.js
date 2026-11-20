@@ -54,8 +54,16 @@ const BreadCrumbs = () => {
     const getDisplayName = (facet, value) => {
         const valueRename = RENAME_FACET_VALUES[facet]?.[value];
         if (valueRename) return valueRename;
-        const bucket = searchFacets[facet]?.buckets?.find(b => b.key === value);
-        if (bucket?.name) return bucket.name;
+        if(facet === "curation_tags"){
+            let [topic, status] = value.split(',');
+            const status_bucket = searchFacets[facet]?.buckets?.find(b => b.key === status);
+            const topic_bucket = status_bucket.topics.buckets?.find(b => b.key === topic)
+            if (status_bucket?.name  && topic_bucket?.name) return `${status_bucket.name} - ${topic_bucket?.name} `;
+        }
+        else{
+            const bucket = searchFacets[facet]?.buckets?.find(b => b.key === value);
+            if (bucket?.name) return bucket.name;
+        }
         // For source evidence assertions, the human-readable label may be
         // unavailable when the value is excluded (its bucket drops out of the
         // current aggregation). Translate the ECO/ATP curie to its short label.

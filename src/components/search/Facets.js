@@ -84,6 +84,7 @@ export const RENAME_FACETS = {
     "predicted_indexing_priority": "Predicted indexing priority",
     "indexing_priority": "Indexing priority",
     "manual_indexing_curation_tag": "Manual indexing curation tag",
+    "curation_tags": "Curation Tags",
     "datePubmedAdded": {
         label: "Date Range: Added to PubMed",
         value: (state) => state.search.datePubmedAdded,
@@ -132,6 +133,7 @@ export const FACETS_CATEGORIES_WITH_FACETS = {
     "Alliance Metadata": ["mods in corpus", "mods needs review", "mods in corpus or needs review"],
     "Workflow Tags": ["file_workflow", "reference_classification", "entity_extraction", "manual_indexing", "curation_classification", "community_curation", "first_pass_curation", "email_extraction"],
     "Curation Classification Tags": ["predicted_indexing_priority", "indexing_priority", "manual_indexing_curation_tag"],
+    "Curation Status": ["curation_tags"],
     "Bibliographic Data": ["mod reference types", "pubmed types", "category", "pubmed publication status", "retraction status", "authors.name", "language"],
     "Images": ["can display image", "has image"],
     "Topics and Entities": ["topics", "confidence_levels", "confidence_scores", "source_methods", "source_evidence_assertions", "data_novelty"],
@@ -353,7 +355,6 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                         } else {
                             //Remove NOT Confidence Levels if no topic is selected.
                             if(facet === 'topics' && searchExcludedFacetsValues.confidence_levels){
-                                console.log(searchFacetsValues.topics);
                                 searchExcludedFacetsValues.confidence_levels.forEach(confidence_level => {
                                     dispatch(removeExcludedFacetValue('confidence_levels', confidence_level))
                                 })
@@ -401,6 +402,36 @@ const Facet = ({facetsToInclude, renameFacets}) => {
         )
     }
 
+    const SubFacetItem = ({data,linked_item}) => {
+        /*
+        Currently this can ONLY be curation_tags but if it is reused then it will have to be changed.
+        */
+        return (
+            <div>
+
+                {data.filter((bucket) => bucket.doc_count>0).map(bucket => {
+                    const bucketLabel = bucket.name || bucket.key;
+                    return(
+                        <Row className="facet-item">
+                            <Col xs={3} sm={2} className="facet-indent">
+                                <StandardFacetCheckbox facet={'curation_tags'} value={`${bucket.key},${linked_item}`}/>
+                            </Col>
+                            <Col xs={6} sm={7} className="facet-indent-text">
+                                {bucketLabel}
+                            </Col>
+                            <Col xs={3} sm={3}>
+                                <Badge variant="secondary">
+                                    {bucket.doc_count}
+                                </Badge>
+                            </Col>
+                        </Row>
+                    )}
+                )}
+            </div>
+
+        );
+    }
+
     const renderModIcons = (refTypeLabel /* string from bucket.key */) => {
       const mods = modRefTypeToMods?.[refTypeLabel] || [];
       if (!mods.length) return null;
@@ -434,7 +465,7 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                         'file_workflow', 'manual_indexing', 'reference_classification',
 		                'entity_extraction', 'curation_classification', 'community_curation', 'first_pass_curation', 'email_extraction',
                         'predicted_indexing_priority', 'indexing_priority', 'manual_indexing_curation_tag',
-                        'can_display_image', 'has_image'].includes(key)) {
+                        'can_display_image', 'has_image','curation_tags'].includes(key)) {
                     key = key + '.keyword';
                 }
 
@@ -478,13 +509,14 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                     return (
                                     <Container key={bucket.key}>
                                         <Row className="facet-item">
-
-                                            <Col xs={3} sm={2} className={Child_terms.includes(bucket.key) ? 'facet-indent' : null}>
-                                                {negatedFacetCategories.includes(facetToInclude) ? 
-                                                    <NegatedFacetCheckbox facet={key} value={bucket.key} /> : 
-                                                    <StandardFacetCheckbox facet={key} value={bucket.key} />
-                                                }
-                                            </Col>
+                                            {facetToInclude !== 'curation_tags' ?
+                                                <Col xs={3} sm={2} className={Child_terms.includes(bucket.key) ? 'facet-indent' : null}>
+                                                    {negatedFacetCategories.includes(facetToInclude) ?
+                                                        <NegatedFacetCheckbox facet={key} value={bucket.key} /> :
+                                                        <StandardFacetCheckbox facet={key} value={bucket.key} />
+                                                    }
+                                                </Col>
+                                            : null }
 
                                             <Col xs={6} sm={7} className={Child_terms.includes(bucket.key) ? 'facet-indent-text' : null}>
                                                 {(key === 'source_methods' || key === 'source_evidence_assertions') ? (
@@ -511,8 +543,12 @@ const Facet = ({facetsToInclude, renameFacets}) => {
                                                         bucket.docs_count.doc_count.toLocaleString() :
                                                         bucket.doc_count.toLocaleString()}                                                                            
                                                 </Badge>                                                                                                              
-                                            </Col>                                                                                                                    
+                                            </Col>
                                         </Row>
+                                        {facetToInclude === 'curation_tags' ?
+                                            <SubFacetItem data={bucket.topics.buckets} linked_item={bucket.key} />
+                                        : null}
+
                                     </Container>
                                     );
                                 })}
@@ -549,7 +585,6 @@ const NumberRangeWidget = () => {
         </div>
     )
 }
-
 
 const AuthorFilter = () => {
   const authorFilter = useSelector(state => state.search.authorFilter);
@@ -738,8 +773,7 @@ const Facets = () => {
 				     )}
 				   </>
                                 )}
-                                {facetCategory === 'Date Range'
-                                    ? <DateFacet facetsToInclude={facetsInCategory}/>
+                                {facetCategory === 'Date Range' ? <DateFacet facetsToInclude={facetsInCategory}/>
                                     : (facetCategory === 'Topics and Entities' && searchMode === 'advanced')
                                         ? <div style={{ marginLeft: '30px', marginRight: '10px', fontSize: '0.8rem', color: '#6c757d' }}>
                                               The advanced query builder is shown above the results, where it has more room.
