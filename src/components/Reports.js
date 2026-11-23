@@ -14,6 +14,7 @@ import { setDateRangeDict, setDateOptionDict, setDateFrequencyDict } from '../ac
 import { fetchMLModelsIfNeeded } from '../actions/mlModelsActions';
 import ModelsTable from './reports/ModelsTable';
 import QCReportDateSelector from './reports/QCReportDateSelector';
+import { stuckFileUploadRows } from './reports/stuckFileUpload';
 
 import { api } from "../api";
 import { convertDate } from '../utils/reportDates';
@@ -1163,6 +1164,133 @@ const QCReportDuplicateOrcids = ({ modSection }) => {
 }; // const QCReportDuplicateOrcids
 
 
+// Papers left at "file upload in progress" (ATP:0000139) for 4+ weeks (SCRUM-6941): only a
+// final main PDF moves a paper on, so these are never converted or classified until a curator
+// uploads the PDF or marks the file unavailable.
+const QCReportStuckFileUpload = ({ modSection }) => {
+  // Component state, not redux: see the note in QCReportObsoleteEntities.
+  const [qcReportStuckFileUpload, setQcReportStuckFileUpload] = useState(emptyQcReport);
+  const [selectedDate, setSelectedDate] = useState(null);
+
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  const [key, setKey] = useState(0);
+  const gridRef = useRef();
+  const gridOptions = { autoSizeStrategy: { type: 'fitCellContents', } }
+
+  const paginationPageSizeSelector = useMemo(() => { return [10, 25, 50, 100, 500]; }, []);
+
+  useEffect(() => {
+    if (selectedDate === null) { return; }
+    let cancelled = false;
+
+    const fetchData = async () => {
+      const url = qcReportUrl('/check/check_stuck_file_upload', selectedDate);
+      setIsLoadingData(true);
+      try {
+        const result = await api.get(url);
+        if (cancelled) { return; }
+        setQcReportStuckFileUpload(result.data);
+        setLoadFailed(false);
+        setKey(prevKey => prevKey + 1);
+      } catch (error) {
+        if (cancelled) { return; }
+        console.error('Error fetching data:', error);
+        setQcReportStuckFileUpload(emptyQcReport);
+        setLoadFailed(true);
+      } finally {
+        if (!cancelled) { setIsLoadingData(false); }
+      }
+    };
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, [selectedDate]);
+
+    const columnDefs = [
+      { headerName: "Reference ID",
+          field: "reference_curie",
+          cellRenderer: props => {
+              return <a href={process.env.REACT_APP_UI_URL+"/Biblio?action=display&referenceCurie="+props.value}>{props.value}</a>
+          },
+          flex:1, cellStyle: { textAlign: 'left' },
+          headerClass: 'wft-bold-header' },
+      { headerName: "PMID", field: "pmid", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+      { headerName: "PMCID", field: "pmcid", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+      { headerName: "In Progress Since", field: "since", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+      { headerName: "Days", field: "days", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+      { headerName: "Has nXML", field: "has_nxml", flex:1, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' },
+      { headerName: "Files", field: "files", flex:2, cellStyle: { textAlign: 'left' }, headerClass: 'wft-bold-header' }
+    ];
+
+  const rowData = stuckFileUploadRows(qcReportStuckFileUpload, modSection);
+
+  return (
+    <div>
+      <div>
+        <Container fluid style={{ width: '90%' }}>
+          <Row>
+            <Col>
+              <h4 style={{ textAlign: 'left' }}>Papers Stuck at File Upload in Progress</h4>
+              <div style={{ textAlign: 'left' }}>
+                Papers at "file upload in progress" for at least 4 weeks. Only a final main PDF moves a paper
+                on, so these are not converted or classified until a PDF is uploaded or the file is marked unavailable.
+                <br /><br />
+              </div>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <QCReportDateSelector
+                reportKey="stuck_file_upload"
+                instanceId={modSection}
+                selectedDate={selectedDate}
+                onChange={setSelectedDate}
+              />
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              {isLoadingData ? (
+                <div className="text-center">
+                  <Spinner animation="border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                </div>
+              ) : (
+                <div className="ag-theme-quartz" onCopy={handleGridCopy} style={{ width: '100%' }}>
+                 {loadFailed ? (<QCReportLoadError selectedDate={selectedDate} />) : (<>
+                 {( qcReportStuckFileUpload['date-produced'] !== null) &&
+                  (<div style={{ textAlign: 'left' }}>Date Produced: {convertDate(qcReportStuckFileUpload['date-produced'])}<br /><br /></div>) }
+                 {rowData ? (
+                  <AgGridReact
+                    key={key}
+                    ref={gridRef}
+                    rowData={rowData}
+                    columnDefs={columnDefs}
+                    pagination={true}
+                    paginationPageSize={10}
+                    paginationPageSizeSelector={paginationPageSizeSelector}
+                    enableCellTextSelection={true}
+                    ensureDomOrder={true}
+                    suppressColumnVirtualisation={true}
+                    domLayout="autoHeight"
+                    gridOptions = {gridOptions}
+                  />
+                  ) : (<div style={{ textAlign: 'left', fontWeight: 'bold' }}> No papers stuck at file upload in progress for {modSection}</div>)}
+                 </>)}
+                </div>
+              )}
+            </Col>
+          </Row>
+        </Container>
+      </div>
+    </div>
+  );
+}; // const QCReportStuckFileUpload
+
+
 const ReportsContainer = () => {
   const dispatch = useDispatch();
   const mods = useSelector(state => state.app.mods);
@@ -1207,6 +1335,8 @@ const ReportsContainer = () => {
                 <QCObsoletePmids modSection={mod} />
                   <hr/>
                 <QCReportDuplicateOrcids modSection={mod} />
+                  <hr/>
+                <QCReportStuckFileUpload modSection={mod} />
               </Tab>
               <Tab eventKey={`${mod}_stats`} title="Workflow Statistics">
                 <WorkflowStatModTablesContainer modSection={mod} />
